@@ -1,0 +1,10 @@
+*.iml
+.DS_Store
+local.properties
+secrets.properties
+
+/.idea
+.gradle
+.kotlin/
+build/
+captures/
