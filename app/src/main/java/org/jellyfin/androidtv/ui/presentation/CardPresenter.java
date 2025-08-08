@@ -37,7 +37,7 @@ import java.util.Locale;
 import kotlin.Lazy;
 
 public class CardPresenter extends Presenter {
-    private int mStaticHeight = 150;
+    private int mStaticHeight = 165;
     private ImageType mImageType = ImageType.POSTER;
     private double aspect;
     private boolean mShowInfo = true;
@@ -66,8 +66,8 @@ public class CardPresenter extends Presenter {
     }
 
     class ViewHolder extends Presenter.ViewHolder {
-        private int cardWidth = 115;
-        private int cardHeight = 140;
+        private int cardWidth = 127;
+        private int cardHeight = 154;
 
         private BaseRowItem mItem;
         private LegacyImageCardView mCardView;
@@ -89,7 +89,7 @@ public class CardPresenter extends Presenter {
         }
 
         public void setItem(BaseRowItem m) {
-            setItem(m, ImageType.POSTER, 130, 150, 150);
+            setItem(m, ImageType.POSTER, 143, 165, 165);
         }
 
         public void setItem(BaseRowItem m, ImageType imageType, int lHeight, int pHeight, int sHeight) {
@@ -198,7 +198,7 @@ public class CardPresenter extends Presenter {
                     cardHeight = !m.getStaticHeight() ? (aspect > 1 ? lHeight : pHeight) : sHeight;
                     cardWidth = (int) (aspect * cardHeight);
                     if (cardWidth < 5) {
-                        cardWidth = 115;  //Guard against zero size images causing picasso to barf
+                        cardWidth = 127;  //Guard against zero size images causing picasso to barf
                     }
                     if (Utils.isTrue(itemDto.isPlaceHolder())) {
                         mCardView.setBanner(R.drawable.banner_edge_disc);
@@ -235,7 +235,7 @@ public class CardPresenter extends Presenter {
                     cardHeight = !m.getStaticHeight() ? tvAspect > 1 ? lHeight : pHeight : sHeight;
                     cardWidth = (int) ((tvAspect) * cardHeight);
                     if (cardWidth < 5) {
-                        cardWidth = 115;  //Guard against zero size images causing picasso to barf
+                        cardWidth = 127;  //Guard against zero size images causing picasso to barf
                     }
                     mCardView.setMainImageDimensions(cardWidth, cardHeight);
                     // Channel logos should fit within the view
@@ -267,7 +267,7 @@ public class CardPresenter extends Presenter {
                     cardHeight = !m.getStaticHeight() ? recordingAspect > 1 ? lHeight : pHeight : sHeight;
                     cardWidth = (int) ((recordingAspect) * cardHeight);
                     if (cardWidth < 5) {
-                        cardWidth = 115;  //Guard against zero size images causing picasso to barf
+                        cardWidth = 127;  //Guard against zero size images causing picasso to barf
                     }
                     mCardView.setMainImageDimensions(cardWidth, cardHeight);
                     mDefaultCardImage = ContextCompat.getDrawable(mCardView.getContext(), R.drawable.tile_port_tv);
@@ -343,7 +343,7 @@ public class CardPresenter extends Presenter {
         BaseRowItem rowItem = (BaseRowItem) item;
 
         ViewHolder holder = (ViewHolder) viewHolder;
-        holder.setItem(rowItem, mImageType, 130, 150, mStaticHeight);
+        holder.setItem(rowItem, mImageType, 143, 165, mStaticHeight);
 
         holder.mCardView.setTitleText(rowItem.getCardName(holder.mCardView.getContext()));
         holder.mCardView.setContentText(rowItem.getSubText(holder.mCardView.getContext()));
