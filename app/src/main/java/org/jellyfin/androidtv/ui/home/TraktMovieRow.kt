@@ -32,6 +32,7 @@ class TraktMovieRow(
 ) : HomeFragmentRow {
     
     private var adapter: MutableObjectAdapter<BaseRowItem>? = null
+    private val heroUpdateManager = HeroUpdateManager.getInstance()
     
     override fun addToRowsAdapter(context: Context, cardPresenter: CardPresenter, rowsAdapter: MutableObjectAdapter<Row>) {
         Timber.d("Adding TraktMovieRow: $title")
@@ -168,7 +169,7 @@ class MovieRowItem(
                     } catch (e: Exception) {
                         null
                     }
-                }
+                },
             )
         }
     }

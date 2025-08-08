@@ -373,6 +373,12 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 				itemRowAdapter?.loadMoreItemsIfNeeded(itemRowAdapter.indexOf(item))
 
 				backgroundService.setBackground(item.baseItem)
+				
+				// Update hero overlay if this is a MovieRowItem
+				if (item is MovieRowItem) {
+					// The hero overlay will be managed separately in the HomeFragment
+					HeroUpdateManager.getInstance().updateHeroMovie(item.getMovie())
+				}
 			}
 		}
 	}

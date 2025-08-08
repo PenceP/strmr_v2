@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="top|start"
+    android:background="@android:color/transparent"
+    android:paddingStart="0dp"
+    android:paddingEnd="0dp"
+    android:paddingTop="20dp">
+
+    <!-- Movie Title -->
+    <TextView
+        android:id="@+id/hero_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/white"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:shadowColor="@android:color/black"
+        android:shadowDx="3"
+        android:shadowDy="3"
+        android:shadowRadius="6"
+        android:maxLines="2"
+        android:ellipsize="end"
+        tools:text="Movie Title" />
+
+    <!-- Movie Info Row (Year, Rating) -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="6dp"
+        android:gravity="center_vertical">
+
+        <!-- Release Year -->
+        <TextView
+            android:id="@+id/hero_year"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:shadowColor="@android:color/black"
+            android:shadowDx="2"
+            android:shadowDy="2"
+            android:shadowRadius="4"
+            tools:text="2023" />
+
+        <!-- Separator -->
+        <View
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
+            android:background="@android:color/white"
+            android:alpha="0.8" />
+
+        <!-- Rating -->
+        <TextView
+            android:id="@+id/hero_rating"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/white"
+            android:textSize="22sp"
+            android:shadowColor="@android:color/black"
+            android:shadowDx="2"
+            android:shadowDy="2"
+            android:shadowRadius="4"
+            android:drawableLeft="@drawable/ic_star"
+            android:drawablePadding="6dp"
+            tools:text="8.5" />
+
+    </LinearLayout>
+
+    <!-- Movie Overview -->
+    <TextView
+        android:id="@+id/hero_overview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:textColor="@android:color/white"
+        android:textSize="20sp"
+        android:lineSpacingMultiplier="1.3"
+        android:shadowColor="@android:color/black"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="4"
+        android:maxLines="5"
+        android:ellipsize="end"
+        tools:text="This is the movie overview text that provides a brief description of the movie plot and main characters." />
+
+</LinearLayout>
