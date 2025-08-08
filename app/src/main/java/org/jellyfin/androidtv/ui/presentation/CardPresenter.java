@@ -47,6 +47,7 @@ public class CardPresenter extends Presenter {
 
     public CardPresenter() {
         super();
+        mShowInfo = false;
     }
 
     public CardPresenter(boolean showInfo) {

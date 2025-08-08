@@ -46,9 +46,10 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.koin.compose.koinInject
 
 enum class MainToolbarActiveButton {
-	User,
-	Home,
 	Search,
+	Home,
+	Movies,
+	TVShows,
 
 	None,
 }
@@ -97,25 +98,15 @@ private fun MainToolbar(
 
 				IconButton(
 					onClick = {
-						if (activeButton != MainToolbarActiveButton.User) {
-							mediaManager.clearAudioQueue()
-							sessionRepository.destroyCurrentSession()
-
-							// Open login activity
-							activity?.startActivity(ActivityDestinations.startup(activity))
-							activity?.finishAfterTransition()
+						if (activeButton != MainToolbarActiveButton.Search) {
+							navigationRepository.navigate(Destinations.search())
 						}
 					},
-					colors = if (activeButton == MainToolbarActiveButton.User) activeButtonColors else ButtonDefaults.colors(),
-					contentPadding = if (userImageVisible) PaddingValues(3.dp) else IconButtonDefaults.ContentPadding,
+					colors = if (activeButton == MainToolbarActiveButton.Search) activeButtonColors else ButtonDefaults.colors(),
 				) {
-					Image(
-						painter = if (userImageVisible) userImagePainter else rememberVectorPainter(ImageVector.vectorResource(R.drawable.ic_user)),
-						contentDescription = stringResource(R.string.lbl_switch_user),
-						contentScale = ContentScale.Crop,
-						modifier = Modifier
-							.aspectRatio(1f)
-							.clip(IconButtonDefaults.Shape)
+					Icon(
+						imageVector = ImageVector.vectorResource(R.drawable.ic_search),
+						contentDescription = stringResource(R.string.lbl_search),
 					)
 				}
 
@@ -144,12 +135,21 @@ private fun MainToolbar(
 					)
 					Button(
 						onClick = {
-							if (activeButton != MainToolbarActiveButton.Search) {
-								navigationRepository.navigate(Destinations.search())
+							if (activeButton != MainToolbarActiveButton.Movies) {
+								// TODO: Navigate to Movies section
 							}
 						},
-						colors = if (activeButton == MainToolbarActiveButton.Search) activeButtonColors else ButtonDefaults.colors(),
-						content = { Text(stringResource(R.string.lbl_search)) }
+						colors = if (activeButton == MainToolbarActiveButton.Movies) activeButtonColors else ButtonDefaults.colors(),
+						content = { Text(stringResource(R.string.lbl_movies)) }
+					)
+					Button(
+						onClick = {
+							if (activeButton != MainToolbarActiveButton.TVShows) {
+								// TODO: Navigate to TV Shows section
+							}
+						},
+						colors = if (activeButton == MainToolbarActiveButton.TVShows) activeButtonColors else ButtonDefaults.colors(),
+						content = { Text(stringResource(R.string.lbl_tv_series)) }
 					)
 				}
 			}
