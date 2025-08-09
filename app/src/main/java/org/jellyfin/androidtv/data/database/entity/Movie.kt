@@ -24,6 +24,6 @@ data class Movie(
     val adult: Boolean,
     val traktId: Int?,
     val traktSlug: String?,
-    val lastUpdated: Long = System.currentTimeMillis(),
-    val category: String // "trending" or "popular"
+    val mediaDataCachedAt: Long = System.currentTimeMillis(), // When movie details were fetched
+    val lastAccessedAt: Long = System.currentTimeMillis() // For LRU cache cleanup if needed
 )

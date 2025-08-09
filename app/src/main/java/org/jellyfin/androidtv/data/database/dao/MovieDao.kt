@@ -10,12 +10,6 @@ import org.jellyfin.androidtv.data.database.entity.Movie
 
 @Dao
 interface MovieDao {
-    @Query("SELECT * FROM movies WHERE category = :category ORDER BY popularity DESC")
-    fun getMoviesByCategory(category: String): PagingSource<Int, Movie>
-    
-    @Query("SELECT * FROM movies WHERE category = :category ORDER BY popularity DESC LIMIT :limit")
-    suspend fun getMoviesByCategorySync(category: String, limit: Int): List<Movie>
-    
     @Query("SELECT * FROM movies WHERE id = :id")
     suspend fun getMovieById(id: Int): Movie?
     
@@ -28,15 +22,21 @@ interface MovieDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovie(movie: Movie)
     
-    @Query("DELETE FROM movies WHERE category = :category")
-    suspend fun clearMoviesByCategory(category: String)
-    
     @Query("DELETE FROM movies")
     suspend fun clearAllMovies()
     
-    @Query("SELECT COUNT(*) FROM movies WHERE category = :category")
-    suspend fun getMovieCountByCategory(category: String): Int
+    @Query("SELECT * FROM movies WHERE mediaDataCachedAt < :timestamp")
+    suspend fun getStaleMovies(timestamp: Long): List<Movie>
     
-    @Query("SELECT * FROM movies WHERE category = :category AND lastUpdated < :timestamp")
-    suspend fun getStaleMovies(category: String, timestamp: Long): List<Movie>
+    @Query("DELETE FROM movies WHERE lastAccessedAt < :timestamp")
+    suspend fun deleteMoviesNotAccessedSince(timestamp: Long)
+    
+    @Query("SELECT COUNT(*) FROM movies")
+    suspend fun getTotalMovieCount(): Int
+    
+    @Query("SELECT COUNT(*) FROM movies WHERE mediaDataCachedAt < :timestamp")
+    suspend fun countMoviesWithStaleCachedData(timestamp: Long): Int
+    
+    @Query("UPDATE movies SET lastAccessedAt = :timestamp WHERE id = :movieId")
+    suspend fun updateLastAccessed(movieId: Int, timestamp: Long)
 }

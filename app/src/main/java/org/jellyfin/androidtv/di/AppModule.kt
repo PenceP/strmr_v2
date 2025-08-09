@@ -117,6 +117,9 @@ val appModule = module {
 		ImageLoader.Builder(androidContext()).apply {
 			serviceLoaderEnabled(false)
 			logger(CoilTimberLogger(if (BuildConfig.DEBUG) Logger.Level.Warn else Logger.Level.Error))
+			
+			// Note: Coil 3 cache configuration is handled automatically
+			// Images will be cached to disk and memory by default
 
 			components {
 				add(get<NetworkFetcher.Factory>())

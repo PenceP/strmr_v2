@@ -9,6 +9,8 @@ import android.widget.TextView
 import coil3.ImageLoader
 import coil3.request.ImageRequest
 import coil3.request.target
+import coil3.request.transformations
+import org.jellyfin.androidtv.util.coil.BlurTransformation
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
@@ -123,6 +125,7 @@ class HomeFragment : Fragment() {
 			
 			val request = ImageRequest.Builder(requireContext())
 				.data(backdropUrl)
+				.transformations(BlurTransformation(requireContext(), radius = 25f))
 				.target(backdropImage)
 				.build()
 			

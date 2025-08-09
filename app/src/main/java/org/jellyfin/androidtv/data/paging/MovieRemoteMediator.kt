@@ -23,18 +23,18 @@ class MovieRemoteMediator(
 ) : RemoteMediator<Int, Movie>() {
     
     private val movieDao = database.movieDao()
+    private val listEntryDao = database.movieListEntryDao()
     private var currentPage = 1
     
     override suspend fun initialize(): InitializeAction {
         val cacheTimeout = System.currentTimeMillis() - CACHE_TIMEOUT_MS
-        val movieCount = movieDao.getMovieCountByCategory(category)
-        val staleMovies = movieDao.getStaleMovies(category, cacheTimeout)
+        val listLastUpdated = listEntryDao.getListLastUpdated(category)
         
-        return if (movieCount == 0 || staleMovies.size > movieCount * 0.5) {
-            // Cache is empty or mostly stale, trigger a refresh
+        return if (listLastUpdated == null || listLastUpdated < cacheTimeout) {
+            // List doesn't exist or is stale, trigger a refresh
             InitializeAction.LAUNCH_INITIAL_REFRESH
         } else {
-            // Cache is relatively fresh, skip initial refresh
+            // List is relatively fresh, skip initial refresh
             InitializeAction.SKIP_INITIAL_REFRESH
         }
     }
@@ -126,13 +126,24 @@ class MovieRemoteMediator(
             // Store in database within transaction
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
-                    // Clear existing data for this category on refresh
-                    movieDao.clearMoviesByCategory(category)
+                    // Clear existing list entries for this category on refresh
+                    listEntryDao.clearListEntries(category)
                     currentPage = 1
                 }
                 
                 if (movies.isNotEmpty()) {
                     movieDao.insertMovies(movies)
+                    
+                    // Create list entries for the movies
+                    val listEntries = movies.mapIndexed { index, movie ->
+                        org.jellyfin.androidtv.data.database.entity.MovieListEntry(
+                            movieId = movie.id,
+                            listType = category,
+                            position = (currentPage - 1) * PAGE_SIZE + index,
+                            listUpdatedAt = System.currentTimeMillis()
+                        )
+                    }
+                    listEntryDao.insertListEntries(listEntries)
                     currentPage = page
                 }
             }

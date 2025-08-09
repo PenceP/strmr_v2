@@ -4,6 +4,8 @@ import androidx.paging.ExperimentalPagingApi
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import androidx.paging.PagingSource
+import androidx.paging.PagingState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import org.jellyfin.androidtv.BuildConfig
@@ -47,7 +49,28 @@ class MovieRepository(
                 tmdbApiService = tmdbApiService,
                 database = database
             ),
-            pagingSourceFactory = { movieDao.getMoviesByCategory(CATEGORY_TRENDING) }
+            pagingSourceFactory = { 
+                // Create a custom paging source that uses list entries
+                object : PagingSource<Int, Movie>() {
+                    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Movie> {
+                        return try {
+                            val movies = database.movieListEntryDao().getMoviesForList(
+                                CATEGORY_TRENDING, 
+                                params.loadSize
+                            )
+                            LoadResult.Page(
+                                data = movies,
+                                prevKey = null,
+                                nextKey = if (movies.size < params.loadSize) null else movies.size
+                            )
+                        } catch (e: Exception) {
+                            LoadResult.Error(e)
+                        }
+                    }
+                    
+                    override fun getRefreshKey(state: PagingState<Int, Movie>): Int? = null
+                }
+            }
         ).flow
     }
     
@@ -68,7 +91,28 @@ class MovieRepository(
                 tmdbApiService = tmdbApiService,
                 database = database
             ),
-            pagingSourceFactory = { movieDao.getMoviesByCategory(CATEGORY_POPULAR) }
+            pagingSourceFactory = { 
+                // Create a custom paging source that uses list entries
+                object : PagingSource<Int, Movie>() {
+                    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Movie> {
+                        return try {
+                            val movies = database.movieListEntryDao().getMoviesForList(
+                                CATEGORY_POPULAR, 
+                                params.loadSize
+                            )
+                            LoadResult.Page(
+                                data = movies,
+                                prevKey = null,
+                                nextKey = if (movies.size < params.loadSize) null else movies.size
+                            )
+                        } catch (e: Exception) {
+                            LoadResult.Error(e)
+                        }
+                    }
+                    
+                    override fun getRefreshKey(state: PagingState<Int, Movie>): Int? = null
+                }
+            }
         ).flow
     }
     
@@ -81,9 +125,11 @@ class MovieRepository(
     
     /**
      * Get movies by category synchronously (for initial UI load)
+     * Now uses the new list entry system
      */
     suspend fun getMoviesByCategorySync(category: String, limit: Int): List<Movie> {
-        return movieDao.getMoviesByCategorySync(category, limit)
+        val listEntryDao = database.movieListEntryDao()
+        return listEntryDao.getMoviesForList(category, limit)
     }
     
     /**
@@ -119,23 +165,24 @@ class MovieRepository(
     }
     
     /**
-     * Check if cached data is stale
+     * Check if cached list data is stale
      */
     private suspend fun isCacheStale(category: String): Boolean {
+        val listEntryDao = database.movieListEntryDao()
         val staleTimestamp = System.currentTimeMillis() - CACHE_TIMEOUT_MS
-        val staleMovies = movieDao.getStaleMovies(category, staleTimestamp)
-        val totalMovies = movieDao.getMovieCountByCategory(category)
+        val lastUpdated = listEntryDao.getListLastUpdated(category)
         
-        // Consider cache stale if more than 50% of movies are stale or if no movies exist
-        return totalMovies == 0 || staleMovies.size > totalMovies * 0.5
+        // Consider cache stale if list hasn't been updated recently
+        return lastUpdated == null || lastUpdated < staleTimestamp
     }
     
     /**
      * Fetch and store trending movies from APIs
      */
     private suspend fun fetchAndStoreTrendingMovies(page: Int, clearExisting: Boolean = false) {
+        val listEntryDao = database.movieListEntryDao()
         if (clearExisting) {
-            movieDao.clearMoviesByCategory(CATEGORY_TRENDING)
+            listEntryDao.clearListEntries(CATEGORY_TRENDING)
         }
         
         val traktMovies = traktApiService.getTrendingMovies(
@@ -157,24 +204,42 @@ class MovieRepository(
                 MovieMapper.mapTraktAndTmdbToMovie(
                     traktResponse = traktResponse,
                     tmdbMovieDetails = tmdbMovie,
-                    category = CATEGORY_TRENDING
+                    category = "" // Category no longer stored in Movie entity
+                ).copy(
+                    mediaDataCachedAt = System.currentTimeMillis(),
+                    lastAccessedAt = System.currentTimeMillis()
                 )
             } catch (e: Exception) {
                 Timber.w(e, "Failed to fetch TMDB data for movie: ${traktResponse.movie.title}")
                 // Fallback to Trakt data only
-                MovieMapper.mapTraktToMovie(traktResponse, CATEGORY_TRENDING)
+                MovieMapper.mapTraktToMovie(traktResponse, "").copy(
+                    mediaDataCachedAt = System.currentTimeMillis(),
+                    lastAccessedAt = System.currentTimeMillis()
+                )
             }
         }
         
         movieDao.insertMovies(movies)
+        
+        // Create list entries
+        val listEntries = movies.mapIndexed { index, movie ->
+            org.jellyfin.androidtv.data.database.entity.MovieListEntry(
+                movieId = movie.id,
+                listType = CATEGORY_TRENDING,
+                position = (page - 1) * PAGE_SIZE + index,
+                listUpdatedAt = System.currentTimeMillis()
+            )
+        }
+        listEntryDao.insertListEntries(listEntries)
     }
     
     /**
      * Fetch and store popular movies from APIs
      */
     private suspend fun fetchAndStorePopularMovies(page: Int, clearExisting: Boolean = false) {
+        val listEntryDao = database.movieListEntryDao()
         if (clearExisting) {
-            movieDao.clearMoviesByCategory(CATEGORY_POPULAR)
+            listEntryDao.clearListEntries(CATEGORY_POPULAR)
         }
         
         val traktMovies = traktApiService.getPopularMovies(
@@ -196,15 +261,32 @@ class MovieRepository(
                 MovieMapper.mapTraktAndTmdbToMovie(
                     traktMovie = traktMovie,
                     tmdbMovieDetails = tmdbMovie,
-                    category = CATEGORY_POPULAR
+                    category = "" // Category no longer stored in Movie entity
+                ).copy(
+                    mediaDataCachedAt = System.currentTimeMillis(),
+                    lastAccessedAt = System.currentTimeMillis()
                 )
             } catch (e: Exception) {
                 Timber.w(e, "Failed to fetch TMDB data for movie: ${traktMovie.title}")
                 // Fallback to Trakt data only
-                MovieMapper.mapTraktToMovie(traktMovie, CATEGORY_POPULAR)
+                MovieMapper.mapTraktToMovie(traktMovie, "").copy(
+                    mediaDataCachedAt = System.currentTimeMillis(),
+                    lastAccessedAt = System.currentTimeMillis()
+                )
             }
         }
         
         movieDao.insertMovies(movies)
+        
+        // Create list entries
+        val listEntries = movies.mapIndexed { index, movie ->
+            org.jellyfin.androidtv.data.database.entity.MovieListEntry(
+                movieId = movie.id,
+                listType = CATEGORY_POPULAR,
+                position = (page - 1) * PAGE_SIZE + index,
+                listUpdatedAt = System.currentTimeMillis()
+            )
+        }
+        listEntryDao.insertListEntries(listEntries)
     }
 }

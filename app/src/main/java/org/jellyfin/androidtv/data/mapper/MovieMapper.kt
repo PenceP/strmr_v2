@@ -34,7 +34,6 @@ object MovieMapper {
             adult = tmdbMovie?.adult ?: false,
             traktId = traktMovie.ids.trakt,
             traktSlug = traktMovie.ids.slug,
-            category = category
         )
     }
     
@@ -63,7 +62,6 @@ object MovieMapper {
             adult = false,
             traktId = traktMovie.ids.trakt,
             traktSlug = traktMovie.ids.slug,
-            category = category
         )
     }
     
@@ -92,7 +90,6 @@ object MovieMapper {
             adult = tmdbMovie?.adult ?: false,
             traktId = traktMovie.ids.trakt,
             traktSlug = traktMovie.ids.slug,
-            category = category
         )
     }
     
@@ -122,7 +119,6 @@ object MovieMapper {
             adult = tmdbMovieDetails?.adult ?: false,
             traktId = traktMovie.ids.trakt,
             traktSlug = traktMovie.ids.slug,
-            category = category
         )
     }
     
@@ -151,7 +147,6 @@ object MovieMapper {
             adult = tmdbMovieDetails?.adult ?: false,
             traktId = traktMovie.ids.trakt,
             traktSlug = traktMovie.ids.slug,
-            category = category
         )
     }
     
@@ -179,7 +174,6 @@ object MovieMapper {
             adult = false,
             traktId = traktMovie.ids.trakt,
             traktSlug = traktMovie.ids.slug,
-            category = category
         )
     }
     
@@ -209,7 +203,6 @@ object MovieMapper {
             adult = tmdbMovie.adult,
             traktId = traktId,
             traktSlug = traktSlug,
-            category = category
         )
     }
 }
