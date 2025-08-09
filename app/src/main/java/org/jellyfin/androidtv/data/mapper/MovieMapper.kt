@@ -2,6 +2,7 @@ package org.jellyfin.androidtv.data.mapper
 
 import org.jellyfin.androidtv.data.api.model.tmdb.TmdbMovie
 import org.jellyfin.androidtv.data.api.model.tmdb.TmdbMovieDetails
+import org.jellyfin.androidtv.data.api.model.tmdb.TmdbMovieReleasesResponse
 import org.jellyfin.androidtv.data.api.model.trakt.TraktMovie
 import org.jellyfin.androidtv.data.api.model.trakt.TraktMovieResponse
 import org.jellyfin.androidtv.data.database.entity.Movie
@@ -9,7 +10,81 @@ import org.jellyfin.androidtv.data.database.entity.Movie
 object MovieMapper {
     
     /**
-     * Maps a TraktMovieResponse and TmdbMovie to a Room Movie entity
+     * Extract US certification from release dates response
+     */
+    private fun extractCertification(releasesResponse: TmdbMovieReleasesResponse?): String? {
+        return releasesResponse?.results?.find { it.countryCode == "US" }
+            ?.releaseDates?.firstOrNull { it.certification.isNotEmpty() }
+            ?.certification
+    }
+    
+    /**
+     * Maps a TraktMovieResponse and TmdbMovieDetails to a Room Movie entity with complete data
+     */
+    fun mapTraktAndTmdbToMovie(
+        traktResponse: TraktMovieResponse,
+        tmdbMovieDetails: TmdbMovieDetails?,
+        category: String,
+        releasesResponse: TmdbMovieReleasesResponse? = null
+    ): Movie {
+        val traktMovie = traktResponse.movie
+        return Movie(
+            id = tmdbMovieDetails?.id ?: traktMovie.ids.tmdb ?: 0,
+            title = tmdbMovieDetails?.title ?: traktMovie.title,
+            overview = tmdbMovieDetails?.overview ?: traktMovie.overview,
+            releaseDate = tmdbMovieDetails?.releaseDate ?: traktMovie.year?.toString(),
+            posterPath = tmdbMovieDetails?.posterPath,
+            backdropPath = tmdbMovieDetails?.backdropPath,
+            voteAverage = tmdbMovieDetails?.voteAverage ?: traktMovie.rating ?: 0.0,
+            voteCount = tmdbMovieDetails?.voteCount ?: traktMovie.votes ?: 0,
+            genreIds = tmdbMovieDetails?.genres?.map { it.id } ?: emptyList(),
+            originalLanguage = tmdbMovieDetails?.originalLanguage ?: traktMovie.language ?: "en",
+            originalTitle = tmdbMovieDetails?.originalTitle ?: traktMovie.title,
+            popularity = tmdbMovieDetails?.popularity ?: 0.0,
+            video = tmdbMovieDetails?.video ?: false,
+            adult = tmdbMovieDetails?.adult ?: false,
+            traktId = traktMovie.ids.trakt,
+            traktSlug = traktMovie.ids.slug,
+            runtime = tmdbMovieDetails?.runtime,
+            certification = extractCertification(releasesResponse),
+            rottenTomatoesRating = null // Not available from current APIs
+        )
+    }
+    
+    /**
+     * Maps a TraktMovie (direct) and TmdbMovieDetails to a Room Movie entity with complete data
+     */
+    fun mapTraktAndTmdbToMovie(
+        traktMovie: TraktMovie,
+        tmdbMovieDetails: TmdbMovieDetails?,
+        category: String,
+        releasesResponse: TmdbMovieReleasesResponse? = null
+    ): Movie {
+        return Movie(
+            id = tmdbMovieDetails?.id ?: traktMovie.ids.tmdb ?: 0,
+            title = tmdbMovieDetails?.title ?: traktMovie.title,
+            overview = tmdbMovieDetails?.overview ?: traktMovie.overview,
+            releaseDate = tmdbMovieDetails?.releaseDate ?: traktMovie.year?.toString(),
+            posterPath = tmdbMovieDetails?.posterPath,
+            backdropPath = tmdbMovieDetails?.backdropPath,
+            voteAverage = tmdbMovieDetails?.voteAverage ?: traktMovie.rating ?: 0.0,
+            voteCount = tmdbMovieDetails?.voteCount ?: traktMovie.votes ?: 0,
+            genreIds = tmdbMovieDetails?.genres?.map { it.id } ?: emptyList(),
+            originalLanguage = tmdbMovieDetails?.originalLanguage ?: traktMovie.language ?: "en",
+            originalTitle = tmdbMovieDetails?.originalTitle ?: traktMovie.title,
+            popularity = tmdbMovieDetails?.popularity ?: 0.0,
+            video = tmdbMovieDetails?.video ?: false,
+            adult = tmdbMovieDetails?.adult ?: false,
+            traktId = traktMovie.ids.trakt,
+            traktSlug = traktMovie.ids.slug,
+            runtime = tmdbMovieDetails?.runtime,
+            certification = extractCertification(releasesResponse),
+            rottenTomatoesRating = null // Not available from current APIs
+        )
+    }
+    
+    /**
+     * Maps basic data without detailed fields (for backwards compatibility)
      */
     fun mapTraktAndTmdbToMovie(
         traktResponse: TraktMovieResponse,
@@ -34,6 +109,9 @@ object MovieMapper {
             adult = tmdbMovie?.adult ?: false,
             traktId = traktMovie.ids.trakt,
             traktSlug = traktMovie.ids.slug,
+            runtime = null, // Not available in TmdbMovie
+            certification = null, // Not available without releases call
+            rottenTomatoesRating = null // Not available from current APIs
         )
     }
     
@@ -62,91 +140,9 @@ object MovieMapper {
             adult = false,
             traktId = traktMovie.ids.trakt,
             traktSlug = traktMovie.ids.slug,
-        )
-    }
-    
-    /**
-     * Maps a TraktMovie (direct) and TmdbMovie to a Room Movie entity
-     */
-    fun mapTraktAndTmdbToMovie(
-        traktMovie: TraktMovie,
-        tmdbMovie: TmdbMovie?,
-        category: String
-    ): Movie {
-        return Movie(
-            id = tmdbMovie?.id ?: traktMovie.ids.tmdb ?: 0,
-            title = tmdbMovie?.title ?: traktMovie.title,
-            overview = tmdbMovie?.overview ?: traktMovie.overview,
-            releaseDate = tmdbMovie?.releaseDate ?: traktMovie.year?.toString(),
-            posterPath = tmdbMovie?.posterPath,
-            backdropPath = tmdbMovie?.backdropPath,
-            voteAverage = tmdbMovie?.voteAverage ?: traktMovie.rating ?: 0.0,
-            voteCount = tmdbMovie?.voteCount ?: traktMovie.votes ?: 0,
-            genreIds = tmdbMovie?.genreIds ?: emptyList(),
-            originalLanguage = tmdbMovie?.originalLanguage ?: traktMovie.language ?: "en",
-            originalTitle = tmdbMovie?.originalTitle ?: traktMovie.title,
-            popularity = tmdbMovie?.popularity ?: 0.0,
-            video = tmdbMovie?.video ?: false,
-            adult = tmdbMovie?.adult ?: false,
-            traktId = traktMovie.ids.trakt,
-            traktSlug = traktMovie.ids.slug,
-        )
-    }
-    
-    /**
-     * Maps a TraktMovieResponse and TmdbMovieDetails to a Room Movie entity
-     */
-    fun mapTraktAndTmdbToMovie(
-        traktResponse: TraktMovieResponse,
-        tmdbMovieDetails: TmdbMovieDetails?,
-        category: String
-    ): Movie {
-        val traktMovie = traktResponse.movie
-        return Movie(
-            id = tmdbMovieDetails?.id ?: traktMovie.ids.tmdb ?: 0,
-            title = tmdbMovieDetails?.title ?: traktMovie.title,
-            overview = tmdbMovieDetails?.overview ?: traktMovie.overview,
-            releaseDate = tmdbMovieDetails?.releaseDate ?: traktMovie.year?.toString(),
-            posterPath = tmdbMovieDetails?.posterPath,
-            backdropPath = tmdbMovieDetails?.backdropPath,
-            voteAverage = tmdbMovieDetails?.voteAverage ?: traktMovie.rating ?: 0.0,
-            voteCount = tmdbMovieDetails?.voteCount ?: traktMovie.votes ?: 0,
-            genreIds = tmdbMovieDetails?.genres?.map { it.id } ?: emptyList(),
-            originalLanguage = tmdbMovieDetails?.originalLanguage ?: traktMovie.language ?: "en",
-            originalTitle = tmdbMovieDetails?.originalTitle ?: traktMovie.title,
-            popularity = tmdbMovieDetails?.popularity ?: 0.0,
-            video = tmdbMovieDetails?.video ?: false,
-            adult = tmdbMovieDetails?.adult ?: false,
-            traktId = traktMovie.ids.trakt,
-            traktSlug = traktMovie.ids.slug,
-        )
-    }
-    
-    /**
-     * Maps a TraktMovie (direct) and TmdbMovieDetails to a Room Movie entity
-     */
-    fun mapTraktAndTmdbToMovie(
-        traktMovie: TraktMovie,
-        tmdbMovieDetails: TmdbMovieDetails?,
-        category: String
-    ): Movie {
-        return Movie(
-            id = tmdbMovieDetails?.id ?: traktMovie.ids.tmdb ?: 0,
-            title = tmdbMovieDetails?.title ?: traktMovie.title,
-            overview = tmdbMovieDetails?.overview ?: traktMovie.overview,
-            releaseDate = tmdbMovieDetails?.releaseDate ?: traktMovie.year?.toString(),
-            posterPath = tmdbMovieDetails?.posterPath,
-            backdropPath = tmdbMovieDetails?.backdropPath,
-            voteAverage = tmdbMovieDetails?.voteAverage ?: traktMovie.rating ?: 0.0,
-            voteCount = tmdbMovieDetails?.voteCount ?: traktMovie.votes ?: 0,
-            genreIds = tmdbMovieDetails?.genres?.map { it.id } ?: emptyList(),
-            originalLanguage = tmdbMovieDetails?.originalLanguage ?: traktMovie.language ?: "en",
-            originalTitle = tmdbMovieDetails?.originalTitle ?: traktMovie.title,
-            popularity = tmdbMovieDetails?.popularity ?: 0.0,
-            video = tmdbMovieDetails?.video ?: false,
-            adult = tmdbMovieDetails?.adult ?: false,
-            traktId = traktMovie.ids.trakt,
-            traktSlug = traktMovie.ids.slug,
+            runtime = null,
+            certification = null,
+            rottenTomatoesRating = null
         )
     }
     
@@ -174,35 +170,9 @@ object MovieMapper {
             adult = false,
             traktId = traktMovie.ids.trakt,
             traktSlug = traktMovie.ids.slug,
-        )
-    }
-    
-    /**
-     * Maps a TmdbMovie to a Room Movie entity (TMDB data only)
-     */
-    fun mapTmdbToMovie(
-        tmdbMovie: TmdbMovie,
-        category: String,
-        traktId: Int? = null,
-        traktSlug: String? = null
-    ): Movie {
-        return Movie(
-            id = tmdbMovie.id,
-            title = tmdbMovie.title,
-            overview = tmdbMovie.overview,
-            releaseDate = tmdbMovie.releaseDate,
-            posterPath = tmdbMovie.posterPath,
-            backdropPath = tmdbMovie.backdropPath,
-            voteAverage = tmdbMovie.voteAverage,
-            voteCount = tmdbMovie.voteCount,
-            genreIds = tmdbMovie.genreIds,
-            originalLanguage = tmdbMovie.originalLanguage,
-            originalTitle = tmdbMovie.originalTitle,
-            popularity = tmdbMovie.popularity,
-            video = tmdbMovie.video,
-            adult = tmdbMovie.adult,
-            traktId = traktId,
-            traktSlug = traktSlug,
+            runtime = null,
+            certification = null,
+            rottenTomatoesRating = null
         )
     }
 }

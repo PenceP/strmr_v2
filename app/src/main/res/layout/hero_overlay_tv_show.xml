@@ -10,7 +10,7 @@
     android:paddingEnd="0dp"
     android:paddingTop="20dp">
 
-    <!-- Movie Title -->
+    <!-- Show Title -->
     <TextView
         android:id="@+id/hero_title"
         android:layout_width="wrap_content"
@@ -23,77 +23,54 @@
         android:shadowRadius="6"
         android:maxLines="2"
         android:ellipsize="end"
-        tools:text="Movie Title" />
+        tools:text="Show Title" />
 
-    <!-- Movie Info Row (TMDB Rating, RT Rating, Release Date, Runtime, Certification) -->
+    <!-- Rating and Details Row -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginTop="4dp"
-        android:gravity="center_vertical">
+        android:layout_marginBottom="12dp">
 
-        <!-- TMDB Rating with Star -->
-        <TextView
-            android:id="@+id/hero_tmdb_rating"
+        <!-- TMDB Score -->
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:shadowColor="@android:color/black"
-            android:shadowDx="2"
-            android:shadowDy="2"
-            android:shadowRadius="4"
-            android:text="⭐"
-            android:layout_marginEnd="2dp"
-            tools:text="⭐" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginEnd="20dp">
 
-        <TextView
-            android:id="@+id/hero_tmdb_score"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:shadowColor="@android:color/black"
-            android:shadowDx="2"
-            android:shadowDy="2"
-            android:shadowRadius="4"
-            android:layout_marginEnd="12dp"
-            tools:text="8.1" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:shadowColor="@android:color/black"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="4"
+                android:text="⭐"
+                android:layout_marginEnd="2dp"
+                tools:text="⭐" />
 
-        <!-- Rotten Tomatoes Rating -->
-        <TextView
-            android:id="@+id/hero_rt_rating"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:shadowColor="@android:color/black"
-            android:shadowDx="2"
-            android:shadowDy="2"
-            android:shadowRadius="4"
-            android:text="🍅"
-            android:layout_marginEnd="2dp"
-            android:visibility="gone"
-            tools:text="🍅" />
+            <TextView
+                android:id="@+id/hero_tmdb_score"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:shadowColor="@android:color/black"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="4"
+                android:layout_marginEnd="12dp"
+                tools:text="8.5" />
 
-        <TextView
-            android:id="@+id/hero_rt_score"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:shadowColor="@android:color/black"
-            android:shadowDx="2"
-            android:shadowDy="2"
-            android:shadowRadius="4"
-            android:layout_marginEnd="12dp"
-            android:visibility="gone"
-            tools:text="94%" />
+        </LinearLayout>
 
-        <!-- Release Date -->
+        <!-- First Air Date -->
         <TextView
-            android:id="@+id/hero_release_date"
+            android:id="@+id/hero_first_air_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@android:color/white"
@@ -103,25 +80,11 @@
             android:shadowDy="2"
             android:shadowRadius="4"
             android:layout_marginEnd="12dp"
-            tools:text="Jun 3, 1998" />
+            tools:text="Sep 15, 2008" />
 
-        <!-- Runtime -->
+        <!-- Seasons -->
         <TextView
-            android:id="@+id/hero_runtime_icon"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:shadowColor="@android:color/black"
-            android:shadowDx="2"
-            android:shadowDy="2"
-            android:shadowRadius="4"
-            android:text="⏰"
-            android:layout_marginEnd="2dp"
-            tools:text="⏰" />
-
-        <TextView
-            android:id="@+id/hero_runtime"
+            android:id="@+id/hero_seasons"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@android:color/white"
@@ -131,11 +94,25 @@
             android:shadowDy="2"
             android:shadowRadius="4"
             android:layout_marginEnd="12dp"
-            tools:text="1:42:56" />
+            tools:text="5 seasons" />
 
-        <!-- Certification (PG, R, etc.) -->
+        <!-- Episodes -->
         <TextView
-            android:id="@+id/hero_certification"
+            android:id="@+id/hero_episodes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:shadowColor="@android:color/black"
+            android:shadowDx="2"
+            android:shadowDy="2"
+            android:shadowRadius="4"
+            android:layout_marginEnd="12dp"
+            tools:text="62 episodes" />
+
+        <!-- Content Rating -->
+        <TextView
+            android:id="@+id/hero_content_rating"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@android:color/white"
@@ -149,11 +126,11 @@
             android:paddingEnd="6dp"
             android:paddingTop="2dp"
             android:paddingBottom="2dp"
-            tools:text="PG" />
+            tools:text="TV-MA" />
 
     </LinearLayout>
 
-    <!-- Movie Overview -->
+    <!-- Show Overview -->
     <TextView
         android:id="@+id/hero_overview"
         android:layout_width="match_parent"
@@ -168,6 +145,6 @@
         android:shadowRadius="4"
         android:maxLines="5"
         android:ellipsize="end"
-        tools:text="This is the movie overview text that provides a brief description of the movie plot and main characters." />
+        tools:text="This is the show overview text that provides a brief description of the show plot and main characters." />
 
 </LinearLayout>

@@ -201,10 +201,24 @@ class MovieRepository(
                     )
                 }
                 
+                // Fetch releases for certification data
+                val releasesResponse = tmdbId?.let {
+                    try {
+                        tmdbApiService.getMovieReleases(
+                            movieId = it,
+                            authorization = "Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
+                        )
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to fetch releases for movie ID: $it")
+                        null
+                    }
+                }
+                
                 MovieMapper.mapTraktAndTmdbToMovie(
                     traktResponse = traktResponse,
                     tmdbMovieDetails = tmdbMovie,
-                    category = "" // Category no longer stored in Movie entity
+                    category = "", // Category no longer stored in Movie entity
+                    releasesResponse = releasesResponse
                 ).copy(
                     mediaDataCachedAt = System.currentTimeMillis(),
                     lastAccessedAt = System.currentTimeMillis()
@@ -258,10 +272,24 @@ class MovieRepository(
                     )
                 }
                 
+                // Fetch releases for certification data
+                val releasesResponse = tmdbId?.let {
+                    try {
+                        tmdbApiService.getMovieReleases(
+                            movieId = it,
+                            authorization = "Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
+                        )
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to fetch releases for movie ID: $it")
+                        null
+                    }
+                }
+                
                 MovieMapper.mapTraktAndTmdbToMovie(
                     traktMovie = traktMovie,
                     tmdbMovieDetails = tmdbMovie,
-                    category = "" // Category no longer stored in Movie entity
+                    category = "", // Category no longer stored in Movie entity
+                    releasesResponse = releasesResponse
                 ).copy(
                     mediaDataCachedAt = System.currentTimeMillis(),
                     lastAccessedAt = System.currentTimeMillis()

@@ -1,4 +1,4 @@
-package org.jellyfin.androidtv.ui.home
+package org.jellyfin.androidtv.ui.movies
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -24,13 +24,14 @@ import org.jellyfin.androidtv.auth.repository.SessionRepository
 import org.jellyfin.androidtv.data.database.entity.Movie
 import org.jellyfin.androidtv.data.repository.NotificationsRepository
 import org.jellyfin.androidtv.data.service.BackgroundService
-import org.jellyfin.androidtv.databinding.FragmentHomeBinding
+import org.jellyfin.androidtv.databinding.FragmentMoviesBinding
 import org.jellyfin.androidtv.ui.shared.toolbar.MainToolbar
 import org.jellyfin.androidtv.ui.shared.toolbar.MainToolbarActiveButton
+import org.jellyfin.androidtv.ui.home.HeroUpdateManager
 import org.koin.android.ext.android.inject
 
-class HomeFragment : Fragment() {
-	private var _binding: FragmentHomeBinding? = null
+class MoviesFragment : Fragment() {
+	private var _binding: FragmentMoviesBinding? = null
 	private val binding get() = _binding!!
 
 	private val sessionRepository by inject<SessionRepository>()
@@ -53,10 +54,10 @@ class HomeFragment : Fragment() {
 	private lateinit var heroOverview: TextView
 
 	override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-		_binding = FragmentHomeBinding.inflate(inflater, container, false)
+		_binding = FragmentMoviesBinding.inflate(inflater, container, false)
 
 		binding.toolbar.setContent {
-			MainToolbar(MainToolbarActiveButton.Home)
+			MainToolbar(MainToolbarActiveButton.Movies)
 		}
 		
 		// Initialize hero overlay views

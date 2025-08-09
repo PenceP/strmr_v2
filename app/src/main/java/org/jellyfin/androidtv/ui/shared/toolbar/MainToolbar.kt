@@ -136,7 +136,10 @@ private fun MainToolbar(
 					Button(
 						onClick = {
 							if (activeButton != MainToolbarActiveButton.Movies) {
-								// TODO: Navigate to Movies section
+								navigationRepository.navigate(
+									Destinations.movies,
+									replace = true,
+								)
 							}
 						},
 						colors = if (activeButton == MainToolbarActiveButton.Movies) activeButtonColors else ButtonDefaults.colors(),
@@ -145,7 +148,10 @@ private fun MainToolbar(
 					Button(
 						onClick = {
 							if (activeButton != MainToolbarActiveButton.TVShows) {
-								// TODO: Navigate to TV Shows section
+								navigationRepository.navigate(
+									Destinations.tvShows,
+									replace = true,
+								)
 							}
 						},
 						colors = if (activeButton == MainToolbarActiveButton.TVShows) activeButtonColors else ButtonDefaults.colors(),

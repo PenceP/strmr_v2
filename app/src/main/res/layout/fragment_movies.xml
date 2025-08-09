@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <!-- Full screen backdrop background -->
+    <ImageView
+        android:id="@+id/backdrop_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:alpha="0.7" />
+        
+    <!-- Backdrop gradient overlay -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/backdrop_gradient" />
+
+    <!-- Content Area with top padding for toolbar -->
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/content_view"
+        android:name="org.jellyfin.androidtv.ui.movies.MoviesRowsFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="280dp"
+        android:descendantFocusability="afterDescendants"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:focusedByDefault="true">
+
+        <requestFocus />
+    </androidx.fragment.app.FragmentContainerView>
+
+    <!-- Hero Overlay Section - Higher Position -->
+    <include 
+        android:id="@+id/hero_overlay"
+        layout="@layout/overlay_hero_movie"
+        android:layout_width="match_parent"
+        android:layout_height="280dp"
+        android:layout_marginTop="50dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="400dp"
+        android:visibility="visible" />
+
+    <!-- Toolbar overlay at top -->
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:background="@android:color/transparent" />
+
+</FrameLayout>

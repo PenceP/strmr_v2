@@ -123,10 +123,22 @@ class ImprovedMovieRepository(
                         authorization = "Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
                     )
                     
+                    // Fetch releases for certification data
+                    val releasesResponse = try {
+                        tmdbApiService.getMovieReleases(
+                            movieId = movieId,
+                            authorization = "Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
+                        )
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to fetch releases for movie ID: $movieId")
+                        null
+                    }
+                    
                     val movie = MovieMapper.mapTraktAndTmdbToMovie(
                         traktResponse = traktResponse,
                         tmdbMovieDetails = tmdbMovie,
-                        category = "" // Not using category anymore
+                        category = "", // Not using category anymore
+                        releasesResponse = releasesResponse
                     ).copy(
                         mediaDataCachedAt = currentTime,
                         lastAccessedAt = currentTime
@@ -185,10 +197,22 @@ class ImprovedMovieRepository(
                         authorization = "Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
                     )
                     
+                    // Fetch releases for certification data
+                    val releasesResponse = try {
+                        tmdbApiService.getMovieReleases(
+                            movieId = movieId,
+                            authorization = "Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
+                        )
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to fetch releases for movie ID: $movieId")
+                        null
+                    }
+                    
                     val movie = MovieMapper.mapTraktAndTmdbToMovie(
                         traktMovie = traktMovie,
                         tmdbMovieDetails = tmdbMovie,
-                        category = "" // Not using category anymore
+                        category = "", // Not using category anymore
+                        releasesResponse = releasesResponse
                     ).copy(
                         mediaDataCachedAt = currentTime,
                         lastAccessedAt = currentTime

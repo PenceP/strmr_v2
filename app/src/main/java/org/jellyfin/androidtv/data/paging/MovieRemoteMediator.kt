@@ -79,10 +79,24 @@ class MovieRemoteMediator(
                                 )
                             }
                             
+                            // Fetch releases for certification data
+                            val releasesResponse = tmdbId?.let {
+                                try {
+                                    tmdbApiService.getMovieReleases(
+                                        movieId = it,
+                                        authorization = "Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
+                                    )
+                                } catch (e: Exception) {
+                                    Timber.w(e, "Failed to fetch releases for movie ID: $it")
+                                    null
+                                }
+                            }
+                            
                             MovieMapper.mapTraktAndTmdbToMovie(
                                 traktResponse = traktResponse,
                                 tmdbMovieDetails = tmdbMovie,
-                                category = category
+                                category = category,
+                                releasesResponse = releasesResponse
                             )
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to fetch TMDB data for movie: ${traktResponse.movie.title}")
@@ -108,10 +122,24 @@ class MovieRemoteMediator(
                                 )
                             }
                             
+                            // Fetch releases for certification data
+                            val releasesResponse = tmdbId?.let {
+                                try {
+                                    tmdbApiService.getMovieReleases(
+                                        movieId = it,
+                                        authorization = "Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
+                                    )
+                                } catch (e: Exception) {
+                                    Timber.w(e, "Failed to fetch releases for movie ID: $it")
+                                    null
+                                }
+                            }
+                            
                             MovieMapper.mapTraktAndTmdbToMovie(
                                 traktMovie = traktMovie,
                                 tmdbMovieDetails = tmdbMovie,
-                                category = category
+                                category = category,
+                                releasesResponse = releasesResponse
                             )
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to fetch TMDB data for movie: ${traktMovie.title}")

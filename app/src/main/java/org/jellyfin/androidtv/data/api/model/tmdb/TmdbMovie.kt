@@ -114,3 +114,35 @@ data class TmdbImageConfiguration(
     @SerialName("still_sizes")
     val stillSizes: List<String>
 )
+
+@Serializable
+data class TmdbMovieReleasesResponse(
+    @SerialName("id")
+    val id: Int,
+    @SerialName("results")
+    val results: List<TmdbCountryRelease>
+)
+
+@Serializable
+data class TmdbCountryRelease(
+    @SerialName("iso_3166_1")
+    val countryCode: String,
+    @SerialName("release_dates")
+    val releaseDates: List<TmdbReleaseDate>
+)
+
+@Serializable
+data class TmdbReleaseDate(
+    @SerialName("certification")
+    val certification: String,
+    @SerialName("descriptors")
+    val descriptors: List<String> = emptyList(),
+    @SerialName("iso_639_1")
+    val languageCode: String = "",
+    @SerialName("note")
+    val note: String = "",
+    @SerialName("release_date")
+    val releaseDate: String = "",
+    @SerialName("type")
+    val type: Int
+)

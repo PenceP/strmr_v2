@@ -9,4 +9,6 @@ enum class BaseRowType {
 	GridButton,
 	SeriesTimer,
 	LiveTvProgram,
+	Movie,
+	Show,
 }

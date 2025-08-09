@@ -2,6 +2,8 @@ package org.jellyfin.androidtv.data.api.service
 
 import org.jellyfin.androidtv.data.api.model.trakt.TraktMovie
 import org.jellyfin.androidtv.data.api.model.trakt.TraktMovieResponse
+import org.jellyfin.androidtv.data.api.model.trakt.TraktShow
+import org.jellyfin.androidtv.data.api.model.trakt.TraktShowResponse
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Query
@@ -29,6 +31,28 @@ interface TraktApiService {
         @Query("page") page: Int = 1,
         @Query("limit") limit: Int = 20
     ): List<TraktMovie>
+    
+    /**
+     * Get trending TV shows from Trakt
+     */
+    @GET("shows/trending")
+    suspend fun getTrendingShows(
+        @Header("trakt-api-version") version: String = "2",
+        @Header("trakt-api-key") clientId: String,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 20
+    ): List<TraktShowResponse>
+    
+    /**
+     * Get popular TV shows from Trakt
+     */
+    @GET("shows/popular")
+    suspend fun getPopularShows(
+        @Header("trakt-api-version") version: String = "2",
+        @Header("trakt-api-key") clientId: String,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 20
+    ): List<TraktShow>
     
     companion object {
         const val BASE_URL = "https://api.trakt.tv/"

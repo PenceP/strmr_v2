@@ -97,6 +97,40 @@ public class CardPresenter extends Presenter {
             isUserView = false;
             switch (mItem.getBaseRowType()) {
 
+                case Movie:
+                    // Handle MovieRowItem separately since it doesn't have a BaseItemDto
+                    if (imageType.equals(ImageType.BANNER)) {
+                        aspect = ImageHelper.ASPECT_RATIO_BANNER;
+                    } else if (imageType.equals(ImageType.THUMB)) {
+                        aspect = ImageHelper.ASPECT_RATIO_16_9;
+                    } else {
+                        aspect = ImageHelper.ASPECT_RATIO_2_3; // Standard movie poster ratio
+                    }
+                    mDefaultCardImage = ContextCompat.getDrawable(mCardView.getContext(), R.drawable.tile_port_video);
+                    cardHeight = !m.getStaticHeight() ? (aspect > 1 ? lHeight : pHeight) : sHeight;
+                    cardWidth = (int) (aspect * cardHeight);
+                    if (cardWidth < 5) {
+                        cardWidth = 127;  //Guard against zero size images causing picasso to barf
+                    }
+                    mCardView.setMainImageDimensions(cardWidth, cardHeight);
+                    break;
+                case Show:
+                    // Handle ShowRowItem separately since it doesn't have a BaseItemDto
+                    if (imageType.equals(ImageType.BANNER)) {
+                        aspect = ImageHelper.ASPECT_RATIO_BANNER;
+                    } else if (imageType.equals(ImageType.THUMB)) {
+                        aspect = ImageHelper.ASPECT_RATIO_16_9;
+                    } else {
+                        aspect = ImageHelper.ASPECT_RATIO_2_3; // Standard TV show poster ratio
+                    }
+                    mDefaultCardImage = ContextCompat.getDrawable(mCardView.getContext(), R.drawable.tile_port_tv);
+                    cardHeight = !m.getStaticHeight() ? (aspect > 1 ? lHeight : pHeight) : sHeight;
+                    cardWidth = (int) (aspect * cardHeight);
+                    if (cardWidth < 5) {
+                        cardWidth = 127;  //Guard against zero size images causing picasso to barf
+                    }
+                    mCardView.setMainImageDimensions(cardWidth, cardHeight);
+                    break;
                 case BaseItem:
                     org.jellyfin.sdk.model.api.BaseItemDto itemDto = mItem.getBaseItem();
                     boolean showWatched = true;

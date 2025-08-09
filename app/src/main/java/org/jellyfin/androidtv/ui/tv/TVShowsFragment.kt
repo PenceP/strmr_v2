@@ -1,4 +1,4 @@
-package org.jellyfin.androidtv.ui.home
+package org.jellyfin.androidtv.ui.tv
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -21,16 +21,17 @@ import kotlinx.coroutines.flow.onEach
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.auth.repository.ServerRepository
 import org.jellyfin.androidtv.auth.repository.SessionRepository
-import org.jellyfin.androidtv.data.database.entity.Movie
+import org.jellyfin.androidtv.data.database.entity.Show
 import org.jellyfin.androidtv.data.repository.NotificationsRepository
 import org.jellyfin.androidtv.data.service.BackgroundService
-import org.jellyfin.androidtv.databinding.FragmentHomeBinding
+import org.jellyfin.androidtv.databinding.FragmentTvShowsBinding
 import org.jellyfin.androidtv.ui.shared.toolbar.MainToolbar
 import org.jellyfin.androidtv.ui.shared.toolbar.MainToolbarActiveButton
+import org.jellyfin.androidtv.ui.home.HeroUpdateManager
 import org.koin.android.ext.android.inject
 
-class HomeFragment : Fragment() {
-	private var _binding: FragmentHomeBinding? = null
+class TVShowsFragment : Fragment() {
+	private var _binding: FragmentTvShowsBinding? = null
 	private val binding get() = _binding!!
 
 	private val sessionRepository by inject<SessionRepository>()
@@ -45,18 +46,17 @@ class HomeFragment : Fragment() {
 	private lateinit var backdropImage: ImageView
 	private lateinit var heroTitle: TextView
 	private lateinit var heroTmdbScore: TextView
-	private lateinit var heroRtRating: TextView
-	private lateinit var heroRtScore: TextView
-	private lateinit var heroReleaseDate: TextView
-	private lateinit var heroRuntime: TextView
-	private lateinit var heroCertification: TextView
+	private lateinit var heroFirstAirDate: TextView
+	private lateinit var heroSeasons: TextView
+	private lateinit var heroEpisodes: TextView
+	private lateinit var heroContentRating: TextView
 	private lateinit var heroOverview: TextView
 
 	override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-		_binding = FragmentHomeBinding.inflate(inflater, container, false)
+		_binding = FragmentTvShowsBinding.inflate(inflater, container, false)
 
 		binding.toolbar.setContent {
-			MainToolbar(MainToolbarActiveButton.Home)
+			MainToolbar(MainToolbarActiveButton.TVShows)
 		}
 		
 		// Initialize hero overlay views
@@ -79,12 +79,12 @@ class HomeFragment : Fragment() {
 			}
 			.launchIn(viewLifecycleOwner.lifecycleScope)
 			
-		// Observe hero updates from focus changes in movie rows
-		heroUpdateManager.currentHeroMovie
+		// Observe hero updates from focus changes in show rows
+		heroUpdateManager.currentHeroShow
 			.flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED)
-			.onEach { movie -> 
-				if (movie != null) {
-					updateHeroOverlay(movie)
+			.onEach { show -> 
+				if (show != null) {
+					updateHeroOverlay(show)
 				}
 			}
 			.launchIn(viewLifecycleOwner.lifecycleScope)
@@ -104,55 +104,47 @@ class HomeFragment : Fragment() {
 		val heroOverlay = binding.root.findViewById<View>(R.id.hero_overlay)
 		heroTitle = heroOverlay.findViewById(R.id.hero_title)
 		heroTmdbScore = heroOverlay.findViewById(R.id.hero_tmdb_score)
-		heroRtRating = heroOverlay.findViewById(R.id.hero_rt_rating)
-		heroRtScore = heroOverlay.findViewById(R.id.hero_rt_score)
-		heroReleaseDate = heroOverlay.findViewById(R.id.hero_release_date)
-		heroRuntime = heroOverlay.findViewById(R.id.hero_runtime)
-		heroCertification = heroOverlay.findViewById(R.id.hero_certification)
+		heroFirstAirDate = heroOverlay.findViewById(R.id.hero_first_air_date)
+		heroSeasons = heroOverlay.findViewById(R.id.hero_seasons)
+		heroEpisodes = heroOverlay.findViewById(R.id.hero_episodes)
+		heroContentRating = heroOverlay.findViewById(R.id.hero_content_rating)
 		heroOverview = heroOverlay.findViewById(R.id.hero_overview)
 		
-		// Initially hide the overlay until a movie is selected
+		// Initially hide the overlay until a show is selected
 		heroOverlay.visibility = View.GONE
 	}
 	
-	private fun updateHeroOverlay(movie: Movie) {
+	private fun updateHeroOverlay(show: Show) {
 		val heroOverlay = binding.root.findViewById<View>(R.id.hero_overlay)
 		
 		// Update hero text fields
-		heroTitle.text = movie.title
+		heroTitle.text = show.name
 		
 		// TMDB Rating
-		heroTmdbScore.text = if (movie.voteAverage > 0) "%.1f".format(movie.voteAverage) else ""
+		heroTmdbScore.text = if (show.voteAverage > 0) "%.1f".format(show.voteAverage) else ""
 		
-		// Rotten Tomatoes Rating (show only if available)
-		if (movie.rottenTomatoesRating != null && movie.rottenTomatoesRating > 0) {
-			heroRtRating.visibility = View.VISIBLE
-			heroRtScore.visibility = View.VISIBLE
-			heroRtScore.text = "${movie.rottenTomatoesRating}%"
-		} else {
-			heroRtRating.visibility = View.GONE
-			heroRtScore.visibility = View.GONE
-		}
+		// First Air Date - format as "MMM d, yyyy"
+		heroFirstAirDate.text = formatAirDate(show.firstAirDate)
 		
-		// Release Date - format as "MMM d, yyyy"
-		heroReleaseDate.text = formatReleaseDate(movie.releaseDate)
+		// Seasons
+		heroSeasons.text = formatSeasons(show.numberOfSeasons)
 		
-		// Runtime - format as "h:mm:ss"
-		heroRuntime.text = formatRuntime(movie.runtime)
+		// Episodes
+		heroEpisodes.text = formatEpisodes(show.numberOfEpisodes)
 		
-		// Certification
-		heroCertification.text = movie.certification ?: ""
-		heroCertification.visibility = if (movie.certification.isNullOrEmpty()) View.GONE else View.VISIBLE
+		// Content Rating
+		heroContentRating.text = show.contentRating ?: ""
+		heroContentRating.visibility = if (show.contentRating.isNullOrEmpty()) View.GONE else View.VISIBLE
 		
 		// Overview
-		heroOverview.text = movie.overview ?: ""
+		heroOverview.text = show.overview ?: ""
 		
 		// Show the overlay
 		heroOverlay.visibility = View.VISIBLE
 		
 		// Load TMDB backdrop directly into backdrop ImageView
-		if (!movie.backdropPath.isNullOrEmpty()) {
-			val backdropUrl = "https://image.tmdb.org/t/p/original${movie.backdropPath}"
+		if (!show.backdropPath.isNullOrEmpty()) {
+			val backdropUrl = "https://image.tmdb.org/t/p/original${show.backdropPath}"
 			
 			val request = ImageRequest.Builder(requireContext())
 				.data(backdropUrl)
@@ -165,13 +157,13 @@ class HomeFragment : Fragment() {
 	}
 	
 	/**
-	 * Format release date from "yyyy-MM-dd" to "MMM d, yyyy" (e.g., "Jun 3, 1998")
+	 * Format air date from "yyyy-MM-dd" to "MMM d, yyyy" (e.g., "Jun 3, 1998")
 	 */
-	private fun formatReleaseDate(releaseDate: String?): String {
+	private fun formatAirDate(airDate: String?): String {
 		return try {
-			if (releaseDate.isNullOrEmpty()) return ""
-			val parts = releaseDate.split("-")
-			if (parts.size < 3) return releaseDate
+			if (airDate.isNullOrEmpty()) return ""
+			val parts = airDate.split("-")
+			if (parts.size < 3) return airDate
 			
 			val year = parts[0]
 			val month = parts[1].toInt()
@@ -184,18 +176,27 @@ class HomeFragment : Fragment() {
 			
 			"${monthNames[month]} $day, $year"
 		} catch (e: Exception) {
-			releaseDate ?: ""
+			airDate ?: ""
 		}
 	}
 	
 	/**
-	 * Format runtime from minutes to "h:mm:ss" format
+	 * Format number of seasons
 	 */
-	private fun formatRuntime(runtime: Int?): String {
-		return if (runtime != null && runtime > 0) {
-			val hours = runtime / 60
-			val minutes = runtime % 60
-			String.format("%d:%02d:00", hours, minutes)
+	private fun formatSeasons(seasons: Int?): String {
+		return if (seasons != null && seasons > 0) {
+			if (seasons == 1) "$seasons season" else "$seasons seasons"
+		} else {
+			""
+		}
+	}
+	
+	/**
+	 * Format number of episodes
+	 */
+	private fun formatEpisodes(episodes: Int?): String {
+		return if (episodes != null && episodes > 0) {
+			if (episodes == 1) "$episodes episode" else "$episodes episodes"
 		} else {
 			""
 		}

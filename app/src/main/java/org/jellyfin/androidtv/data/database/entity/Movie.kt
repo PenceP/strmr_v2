@@ -24,6 +24,9 @@ data class Movie(
     val adult: Boolean,
     val traktId: Int?,
     val traktSlug: String?,
+    val runtime: Int?, // Runtime in minutes
+    val certification: String?, // Rating like "PG", "R", "PG-13"
+    val rottenTomatoesRating: Int?, // Rotten Tomatoes percentage (0-100)
     val mediaDataCachedAt: Long = System.currentTimeMillis(), // When movie details were fetched
     val lastAccessedAt: Long = System.currentTimeMillis() // For LRU cache cleanup if needed
 )

@@ -4,6 +4,10 @@ import org.jellyfin.androidtv.data.api.model.tmdb.TmdbConfiguration
 import org.jellyfin.androidtv.data.api.model.tmdb.TmdbMovie
 import org.jellyfin.androidtv.data.api.model.tmdb.TmdbMovieDetails
 import org.jellyfin.androidtv.data.api.model.tmdb.TmdbMovieResponse
+import org.jellyfin.androidtv.data.api.model.tmdb.TmdbMovieReleasesResponse
+import org.jellyfin.androidtv.data.api.model.tmdb.TmdbShow
+import org.jellyfin.androidtv.data.api.model.tmdb.TmdbShowDetails
+import org.jellyfin.androidtv.data.api.model.tmdb.TmdbShowResponse
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Path
@@ -61,6 +65,46 @@ interface TmdbApiService {
         @Query("page") page: Int = 1,
         @Query("language") language: String = "en-US"
     ): TmdbMovieResponse
+    
+    /**
+     * Get movie release dates and certifications
+     */
+    @GET("movie/{movie_id}/release_dates")
+    suspend fun getMovieReleases(
+        @Path("movie_id") movieId: Int,
+        @Header("Authorization") authorization: String
+    ): TmdbMovieReleasesResponse
+    
+    /**
+     * Get TV show details by TMDB ID
+     */
+    @GET("tv/{tv_id}")
+    suspend fun getShowDetails(
+        @Path("tv_id") showId: Int,
+        @Header("Authorization") authorization: String,
+        @Query("language") language: String = "en-US",
+        @Query("append_to_response") appendToResponse: String? = null
+    ): TmdbShowDetails
+    
+    /**
+     * Get trending TV shows
+     */
+    @GET("trending/tv/day")
+    suspend fun getTrendingShows(
+        @Header("Authorization") authorization: String,
+        @Query("page") page: Int = 1,
+        @Query("language") language: String = "en-US"
+    ): TmdbShowResponse
+    
+    /**
+     * Get popular TV shows
+     */
+    @GET("tv/popular")
+    suspend fun getPopularShows(
+        @Header("Authorization") authorization: String,
+        @Query("page") page: Int = 1,
+        @Query("language") language: String = "en-US"
+    ): TmdbShowResponse
     
     companion object {
         const val BASE_URL = "https://api.themoviedb.org/3/"
