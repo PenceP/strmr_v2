@@ -13,6 +13,7 @@ import androidx.leanback.widget.Presenter
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.data.api.service.TmdbApiService
 import org.jellyfin.androidtv.ui.AsyncImageView
+import org.jellyfin.androidtv.util.TmdbGenreMapper
 
 class HeroMoviePresenter : Presenter() {
     
@@ -20,6 +21,7 @@ class HeroMoviePresenter : Presenter() {
         val backdropImage: AsyncImageView = view.findViewById(R.id.hero_backdrop)
         val titleText: TextView = view.findViewById(R.id.hero_title)
         val subtitleText: TextView = view.findViewById(R.id.hero_subtitle)
+        val genresText: TextView = view.findViewById(R.id.hero_genres)
         val overviewText: TextView = view.findViewById(R.id.hero_overview)
         val ratingText: TextView = view.findViewById(R.id.hero_rating)
         val yearText: TextView = view.findViewById(R.id.hero_year)
@@ -88,6 +90,15 @@ class HeroMoviePresenter : Presenter() {
             subtitleParts.add("★ %.1f".format(movie.voteAverage))
         }
         holder.subtitleText.text = subtitleParts.joinToString(" • ")
+        
+        // Set genres
+        val genres = TmdbGenreMapper.getMovieGenres(movie.genreIds)
+        if (genres.isNotEmpty()) {
+            holder.genresText.text = genres.joinToString(" / ")
+            holder.genresText.visibility = View.VISIBLE
+        } else {
+            holder.genresText.visibility = View.GONE
+        }
         
         // Load backdrop image
         val backdropUrl = movie.backdropPath?.let { path ->

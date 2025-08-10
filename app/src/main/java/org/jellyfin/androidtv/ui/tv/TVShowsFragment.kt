@@ -28,6 +28,7 @@ import org.jellyfin.androidtv.databinding.FragmentTvShowsBinding
 import org.jellyfin.androidtv.ui.shared.toolbar.MainToolbar
 import org.jellyfin.androidtv.ui.shared.toolbar.MainToolbarActiveButton
 import org.jellyfin.androidtv.ui.home.HeroUpdateManager
+import org.jellyfin.androidtv.util.TmdbGenreMapper
 import org.koin.android.ext.android.inject
 
 class TVShowsFragment : Fragment() {
@@ -39,9 +40,9 @@ class TVShowsFragment : Fragment() {
 	private val notificationRepository by inject<NotificationsRepository>()
 	private val backgroundService by inject<BackgroundService>()
 	private val imageLoader by inject<ImageLoader>()
-	
+
 	private val heroUpdateManager = HeroUpdateManager.getInstance()
-	
+
 	// Backdrop and hero overlay views
 	private lateinit var backdropImage: ImageView
 	private lateinit var heroTitle: TextView
@@ -50,6 +51,7 @@ class TVShowsFragment : Fragment() {
 	private lateinit var heroSeasons: TextView
 	private lateinit var heroEpisodes: TextView
 	private lateinit var heroContentRating: TextView
+	private lateinit var heroGenres: TextView
 	private lateinit var heroOverview: TextView
 
 	override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -58,7 +60,7 @@ class TVShowsFragment : Fragment() {
 		binding.toolbar.setContent {
 			MainToolbar(MainToolbarActiveButton.TVShows)
 		}
-		
+
 		// Initialize hero overlay views
 		initializeHeroOverlay()
 
@@ -78,11 +80,11 @@ class TVShowsFragment : Fragment() {
 				notificationRepository.updateServerNotifications(server)
 			}
 			.launchIn(viewLifecycleOwner.lifecycleScope)
-			
+
 		// Observe hero updates from focus changes in show rows
 		heroUpdateManager.currentHeroShow
 			.flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED)
-			.onEach { show -> 
+			.onEach { show ->
 				if (show != null) {
 					updateHeroOverlay(show)
 				}
@@ -95,67 +97,77 @@ class TVShowsFragment : Fragment() {
 
 		_binding = null
 	}
-	
+
 	private fun initializeHeroOverlay() {
 		// Initialize backdrop ImageView
 		backdropImage = binding.root.findViewById(R.id.backdrop_image)
-		
+
 		// Initialize hero overlay views
 		val heroOverlay = binding.root.findViewById<View>(R.id.hero_overlay)
 		heroTitle = heroOverlay.findViewById(R.id.hero_title)
 		heroTmdbScore = heroOverlay.findViewById(R.id.hero_tmdb_score)
 		heroFirstAirDate = heroOverlay.findViewById(R.id.hero_first_air_date)
 		heroSeasons = heroOverlay.findViewById(R.id.hero_seasons)
-		heroEpisodes = heroOverlay.findViewById(R.id.hero_episodes)
+		//heroEpisodes = heroOverlay.findViewById(R.id.hero_episodes)
 		heroContentRating = heroOverlay.findViewById(R.id.hero_content_rating)
+		heroGenres = heroOverlay.findViewById(R.id.hero_genres)
 		heroOverview = heroOverlay.findViewById(R.id.hero_overview)
-		
+
 		// Initially hide the overlay until a show is selected
 		heroOverlay.visibility = View.GONE
 	}
-	
+
 	private fun updateHeroOverlay(show: Show) {
 		val heroOverlay = binding.root.findViewById<View>(R.id.hero_overlay)
-		
+
 		// Update hero text fields
 		heroTitle.text = show.name
-		
+
 		// TMDB Rating
 		heroTmdbScore.text = if (show.voteAverage > 0) "%.1f".format(show.voteAverage) else ""
-		
+
 		// First Air Date - format as "MMM d, yyyy"
 		heroFirstAirDate.text = formatAirDate(show.firstAirDate)
-		
+
 		// Seasons
 		heroSeasons.text = formatSeasons(show.numberOfSeasons)
-		
+
 		// Episodes
-		heroEpisodes.text = formatEpisodes(show.numberOfEpisodes)
-		
+		//heroEpisodes.text = formatEpisodes(show.numberOfEpisodes)
+
 		// Content Rating
 		heroContentRating.text = show.contentRating ?: ""
 		heroContentRating.visibility = if (show.contentRating.isNullOrEmpty()) View.GONE else View.VISIBLE
-		
+
+		// Genres
+		val genres = TmdbGenreMapper.getTvGenres(show.genreIds)
+		if (genres.isNotEmpty()) {
+			heroGenres.text = genres.joinToString(" / ")
+			heroGenres.visibility = View.VISIBLE
+		} else {
+			heroGenres.visibility = View.GONE
+		}
+
 		// Overview
 		heroOverview.text = show.overview ?: ""
-		
+
 		// Show the overlay
 		heroOverlay.visibility = View.VISIBLE
-		
+
 		// Load TMDB backdrop directly into backdrop ImageView
 		if (!show.backdropPath.isNullOrEmpty()) {
 			val backdropUrl = "https://image.tmdb.org/t/p/original${show.backdropPath}"
-			
+
 			val request = ImageRequest.Builder(requireContext())
 				.data(backdropUrl)
 				.transformations(BlurTransformation(requireContext(), radius = 25f))
 				.target(backdropImage)
 				.build()
-			
+
 			imageLoader.enqueue(request)
 		}
 	}
-	
+
 	/**
 	 * Format air date from "yyyy-MM-dd" to "MMM d, yyyy" (e.g., "Jun 3, 1998")
 	 */
@@ -164,22 +176,22 @@ class TVShowsFragment : Fragment() {
 			if (airDate.isNullOrEmpty()) return ""
 			val parts = airDate.split("-")
 			if (parts.size < 3) return airDate
-			
+
 			val year = parts[0]
 			val month = parts[1].toInt()
 			val day = parts[2].toInt()
-			
+
 			val monthNames = arrayOf(
 				"", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 				"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 			)
-			
+
 			"${monthNames[month]} $day, $year"
 		} catch (e: Exception) {
 			airDate ?: ""
 		}
 	}
-	
+
 	/**
 	 * Format number of seasons
 	 */
@@ -190,16 +202,16 @@ class TVShowsFragment : Fragment() {
 			""
 		}
 	}
-	
+
 	/**
 	 * Format number of episodes
 	 */
-	private fun formatEpisodes(episodes: Int?): String {
-		return if (episodes != null && episodes > 0) {
-			if (episodes == 1) "$episodes episode" else "$episodes episodes"
-		} else {
-			""
-		}
-	}
-	
+//	private fun formatEpisodes(episodes: Int?): String {
+//		return if (episodes != null && episodes > 0) {
+//			if (episodes == 1) "$episodes episode" else "$episodes episodes"
+//		} else {
+//			""
+//		}
+//	}
+
 }

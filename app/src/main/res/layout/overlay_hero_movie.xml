@@ -152,6 +152,22 @@
             tools:text="PG" />
 
     </LinearLayout>
+    <!-- Genres -->
+    <TextView
+        android:id="@+id/hero_genres"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/white"
+        android:textSize="14sp"
+        android:shadowColor="@android:color/black"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="4"
+        android:alpha="0.9"
+        android:layout_marginBottom="4dp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        tools:text="Action &amp; Adventure / Drama / Sci-Fi &amp; Fantasy" />
 
     <!-- Movie Overview -->
     <TextView

@@ -30,7 +30,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="12dp">
+        android:layout_marginTop="4dp">
 
         <!-- TMDB Score -->
         <LinearLayout
@@ -96,20 +96,6 @@
             android:layout_marginEnd="12dp"
             tools:text="5 seasons" />
 
-        <!-- Episodes -->
-        <TextView
-            android:id="@+id/hero_episodes"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:shadowColor="@android:color/black"
-            android:shadowDx="2"
-            android:shadowDy="2"
-            android:shadowRadius="4"
-            android:layout_marginEnd="12dp"
-            tools:text="62 episodes" />
-
         <!-- Content Rating -->
         <TextView
             android:id="@+id/hero_content_rating"
@@ -129,6 +115,23 @@
             tools:text="TV-MA" />
 
     </LinearLayout>
+
+    <!-- Genres -->
+    <TextView
+        android:id="@+id/hero_genres"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/white"
+        android:textSize="14sp"
+        android:shadowColor="@android:color/black"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="4"
+        android:alpha="0.9"
+        android:layout_marginBottom="4dp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        tools:text="Action &amp; Adventure / Drama / Sci-Fi &amp; Fantasy" />
 
     <!-- Show Overview -->
     <TextView

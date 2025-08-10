@@ -28,6 +28,7 @@ import org.jellyfin.androidtv.databinding.FragmentMoviesBinding
 import org.jellyfin.androidtv.ui.shared.toolbar.MainToolbar
 import org.jellyfin.androidtv.ui.shared.toolbar.MainToolbarActiveButton
 import org.jellyfin.androidtv.ui.home.HeroUpdateManager
+import org.jellyfin.androidtv.util.TmdbGenreMapper
 import org.koin.android.ext.android.inject
 
 class MoviesFragment : Fragment() {
@@ -51,6 +52,7 @@ class MoviesFragment : Fragment() {
 	private lateinit var heroReleaseDate: TextView
 	private lateinit var heroRuntime: TextView
 	private lateinit var heroCertification: TextView
+	private lateinit var heroGenres: TextView
 	private lateinit var heroOverview: TextView
 
 	override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -110,6 +112,7 @@ class MoviesFragment : Fragment() {
 		heroReleaseDate = heroOverlay.findViewById(R.id.hero_release_date)
 		heroRuntime = heroOverlay.findViewById(R.id.hero_runtime)
 		heroCertification = heroOverlay.findViewById(R.id.hero_certification)
+		heroGenres = heroOverlay.findViewById(R.id.hero_genres)
 		heroOverview = heroOverlay.findViewById(R.id.hero_overview)
 		
 		// Initially hide the overlay until a movie is selected
@@ -144,6 +147,15 @@ class MoviesFragment : Fragment() {
 		// Certification
 		heroCertification.text = movie.certification ?: ""
 		heroCertification.visibility = if (movie.certification.isNullOrEmpty()) View.GONE else View.VISIBLE
+		
+		// Genres
+		val genres = TmdbGenreMapper.getMovieGenres(movie.genreIds)
+		if (genres.isNotEmpty()) {
+			heroGenres.text = genres.joinToString(" / ")
+			heroGenres.visibility = View.VISIBLE
+		} else {
+			heroGenres.visibility = View.GONE
+		}
 		
 		// Overview
 		heroOverview.text = movie.overview ?: ""
