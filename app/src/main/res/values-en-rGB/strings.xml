@@ -164,7 +164,7 @@
     <string name="lbl_trailers">Trailers</string>
     <string name="lbl_specials">Specials</string>
     <string name="lbl_chapters">Chapters</string>
-    <string name="lbl_cast_crew">Cast &amp; crew</string>
+    <string name="lbl_cast_crew">Cast &amp; Crew</string>
     <string name="msg_unable_to_cancel">Unable to cancel recording</string>
     <string name="msg_recording_cancelled">Recording cancelled</string>
     <string name="msg_unable_to_create_recording">Unable to create recording</string>
