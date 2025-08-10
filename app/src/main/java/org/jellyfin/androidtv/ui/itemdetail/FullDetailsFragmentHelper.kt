@@ -27,6 +27,7 @@ import org.jellyfin.androidtv.data.repository.ImprovedMovieRepository
 import org.jellyfin.androidtv.data.repository.ShowRepository
 import org.jellyfin.androidtv.data.database.entity.CastMember
 import org.jellyfin.androidtv.data.database.entity.ShowCastMember
+import org.jellyfin.androidtv.util.TmdbGenreMapper
 import org.jellyfin.sdk.api.client.ApiClient
 import timber.log.Timber
 import org.jellyfin.sdk.model.api.UserItemDataDto
@@ -152,7 +153,7 @@ fun FullDetailsFragment.createFakeMovieBaseItemDto(movie: Movie, cast: List<Cast
 			listOf("tmdb-backdrop:${movie.backdropPath}")
 		} else null,
 		// Add additional metadata
-		genres = emptyList(), // Could map genre IDs to names if needed
+		genres = TmdbGenreMapper.getMovieGenres(movie.genreIds),
 		// Add people/cast
 		people = cast.map { castMember ->
 			val personType = when {
@@ -232,7 +233,7 @@ fun FullDetailsFragment.createFakeShowBaseItemDto(show: Show, cast: List<ShowCas
 			listOf("tmdb-backdrop:${show.backdropPath}")
 		} else null,
 		// Add additional metadata
-		genres = emptyList(), // Could map genre IDs to names if needed
+		genres = TmdbGenreMapper.getTvGenres(show.genreIds),
 		// Add status information
 		status = show.status,
 		// Add people/cast
