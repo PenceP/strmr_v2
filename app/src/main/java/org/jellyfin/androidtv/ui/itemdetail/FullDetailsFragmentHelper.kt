@@ -21,20 +21,32 @@ import org.jellyfin.androidtv.util.sdk.TrailerUtils.getExternalTrailerIntent
 import org.jellyfin.androidtv.util.sdk.compat.canResume
 import org.jellyfin.androidtv.util.sdk.compat.copyWithUserData
 import org.jellyfin.androidtv.util.showIfNotEmpty
+import org.jellyfin.androidtv.data.database.entity.Movie
+import org.jellyfin.androidtv.data.database.entity.Show
+import org.jellyfin.androidtv.data.repository.ImprovedMovieRepository
+import org.jellyfin.androidtv.data.repository.ShowRepository
+import org.jellyfin.androidtv.data.database.entity.CastMember
+import org.jellyfin.androidtv.data.database.entity.ShowCastMember
 import org.jellyfin.sdk.api.client.ApiClient
+import timber.log.Timber
+import org.jellyfin.sdk.model.api.UserItemDataDto
+import org.jellyfin.androidtv.util.apiclient.JellyfinImage
+import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.liveTvApi
 import org.jellyfin.sdk.api.client.extensions.tvShowsApi
+import org.jellyfin.sdk.api.client.extensions.imageApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.BaseItemPerson
 import org.jellyfin.sdk.model.api.MediaType
+import org.jellyfin.sdk.model.api.PersonKind
 import org.jellyfin.sdk.model.api.SeriesTimerInfoDto
 import org.jellyfin.sdk.model.extensions.ticks
 import org.jellyfin.sdk.model.serializer.toUUID
 import org.koin.android.ext.android.inject
-import timber.log.Timber
 import java.time.Instant
 import java.util.UUID
 import kotlin.time.Duration
@@ -109,6 +121,207 @@ fun FullDetailsFragment.createFakeSeriesTimerBaseItemDto(timer: SeriesTimerInfoD
 	name = timer.name,
 	overview = timer.getSeriesOverview(requireContext()),
 )
+
+fun FullDetailsFragment.createFakeMovieBaseItemDto(movie: Movie, cast: List<CastMember> = emptyList()): BaseItemDto {
+	val baseItem = BaseItemDto(
+		id = UUID.fromString(movie.id.toString() + "-0000-0000-0000-000000000000"),
+		type = BaseItemKind.MOVIE,
+		mediaType = MediaType.VIDEO,
+		name = movie.title,
+		overview = movie.overview,
+		originalTitle = movie.originalTitle,
+		// Add runtime in ticks (1 minute = 600,000,000 ticks)
+		runTimeTicks = movie.runtime?.let { it * 60 * 10_000_000L },
+		// Add community rating (convert from 0-10 to 0-100 scale)
+		communityRating = if (movie.voteAverage > 0) (movie.voteAverage * 10).toFloat() else null,
+		// Add official rating (certification)
+		officialRating = movie.certification,
+		// Add production year
+		productionYear = movie.releaseDate?.substring(0, 4)?.toIntOrNull(),
+		// Add premiere date
+		premiereDate = movie.releaseDate?.let { 
+			try {
+				java.time.LocalDateTime.parse(it + "T00:00:00")
+			} catch (e: Exception) { null }
+		},
+		// Add image tags for Jellyfin image system - encode image paths in the tag
+		imageTags = if (!movie.posterPath.isNullOrEmpty()) {
+			mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to "tmdb-poster:${movie.posterPath}")
+		} else null,
+		backdropImageTags = if (!movie.backdropPath.isNullOrEmpty()) {
+			listOf("tmdb-backdrop:${movie.backdropPath}")
+		} else null,
+		// Add additional metadata
+		genres = emptyList(), // Could map genre IDs to names if needed
+		// Add people/cast
+		people = cast.map { castMember ->
+			val personType = when {
+				castMember.department == "Acting" -> PersonKind.ACTOR
+				castMember.job == "Director" -> PersonKind.DIRECTOR
+				castMember.job == "Writer" || castMember.job == "Screenplay" -> PersonKind.WRITER
+				castMember.job == "Producer" || castMember.job == "Executive Producer" -> PersonKind.PRODUCER
+				else -> PersonKind.UNKNOWN
+			}
+			Timber.d("Creating person: ${castMember.name} (${castMember.character ?: castMember.job}) -> type: $personType")
+			BaseItemPerson(
+				id = UUID.nameUUIDFromBytes("person-${castMember.personId}".toByteArray()),
+				name = castMember.name,
+				role = castMember.character,
+				type = personType,
+				primaryImageTag = castMember.profilePath?.let { "tmdb-profile:$it" }
+			)
+		}.also { peopleList ->
+			Timber.d("Created BaseItemDto with ${peopleList.size} people total")
+			val directors = peopleList.filter { it.type == PersonKind.DIRECTOR }
+			Timber.d("Directors found: ${directors.map { it.name }}")
+		}
+	)
+	
+	// Create a fake UserItemDataDto to prevent NullPointerException
+	return baseItem.copyWithUserData(
+		UserItemDataDto(
+			rating = null,
+			played = false,
+			playedPercentage = 0.0,
+			playbackPositionTicks = 0L,
+			playCount = 0,
+			isFavorite = false,
+			likes = null,
+			lastPlayedDate = null,
+			unplayedItemCount = null,
+			key = "",
+			itemId = UUID.fromString(movie.id.toString() + "-0000-0000-0000-000000000000")
+		)
+	)
+}
+
+fun FullDetailsFragment.createFakeShowBaseItemDto(show: Show, cast: List<ShowCastMember> = emptyList()): BaseItemDto {
+	val baseItem = BaseItemDto(
+		id = UUID.fromString(show.id.toString() + "-1111-1111-1111-111111111111"),
+		type = BaseItemKind.SERIES,
+		mediaType = MediaType.VIDEO,
+		name = show.name,
+		overview = show.overview,
+		originalTitle = show.originalName,
+		// Add community rating (convert from 0-10 to 0-100 scale)
+		communityRating = if (show.voteAverage > 0) (show.voteAverage * 10).toFloat() else null,
+		// Add content rating (status field could contain rating info)
+		officialRating = show.contentRating,
+		// Add production year from first air date
+		productionYear = show.firstAirDate?.substring(0, 4)?.toIntOrNull(),
+		// Add premiere date
+		premiereDate = show.firstAirDate?.let { 
+			try {
+				java.time.LocalDateTime.parse(it + "T00:00:00")
+			} catch (e: Exception) { null }
+		},
+		// Add end date if available
+		endDate = show.lastAirDate?.let {
+			try {
+				java.time.LocalDateTime.parse(it + "T00:00:00")
+			} catch (e: Exception) { null }
+		},
+		// Add season/episode counts
+		childCount = show.numberOfSeasons,
+		recursiveItemCount = show.numberOfEpisodes,
+		// Add image tags for Jellyfin image system - encode image paths in the tag
+		imageTags = if (!show.posterPath.isNullOrEmpty()) {
+			mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to "tmdb-poster:${show.posterPath}")
+		} else null,
+		backdropImageTags = if (!show.backdropPath.isNullOrEmpty()) {
+			listOf("tmdb-backdrop:${show.backdropPath}")
+		} else null,
+		// Add additional metadata
+		genres = emptyList(), // Could map genre IDs to names if needed
+		// Add status information
+		status = show.status,
+		// Add people/cast
+		people = cast.map { castMember ->
+			BaseItemPerson(
+				id = UUID.nameUUIDFromBytes("person-${castMember.personId}".toByteArray()),
+				name = castMember.name,
+				role = castMember.character,
+				type = when {
+					castMember.department == "Acting" -> PersonKind.ACTOR
+					castMember.job == "Creator" -> PersonKind.DIRECTOR // Use Director for Creator
+					castMember.job == "Director" -> PersonKind.DIRECTOR
+					castMember.job == "Writer" -> PersonKind.WRITER
+					castMember.job == "Producer" || castMember.job == "Executive Producer" -> PersonKind.PRODUCER
+					else -> PersonKind.UNKNOWN
+				},
+				primaryImageTag = castMember.profilePath?.let { "tmdb-profile:$it" }
+			)
+		}
+	)
+	
+	// Create a fake UserItemDataDto to prevent NullPointerException
+	return baseItem.copyWithUserData(
+		UserItemDataDto(
+			rating = null,
+			played = false,
+			playedPercentage = 0.0,
+			playbackPositionTicks = 0L,
+			playCount = 0,
+			isFavorite = false,
+			likes = null,
+			lastPlayedDate = null,
+			unplayedItemCount = null,
+			key = "",
+			itemId = UUID.fromString(show.id.toString() + "-1111-1111-1111-111111111111")
+		)
+	)
+}
+
+fun FullDetailsFragment.loadMovieFromDatabase(tmdbId: Int, callback: (BaseItemDto?) -> Unit) {
+	val movieRepository: ImprovedMovieRepository by inject()
+	
+	lifecycleScope.launch {
+		val movie: Movie? = movieRepository.getMovieByTmdbId(tmdbId)
+		if (movie != null) {
+			// Try to get existing cast data first
+			var cast: List<CastMember> = movieRepository.getMovieCast(tmdbId)
+			Timber.d("Loading movie: ${movie.title} with ${cast.size} cast members from database")
+			
+			// If we have no cast data, or very few cast members, try to fetch fresh data
+			if (cast.isEmpty() || cast.size < 3) {
+				Timber.d("Cast data seems incomplete (${cast.size} members), attempting to fetch fresh data")
+				try {
+					// Force refresh cast data - this will fetch from TMDB API and update database
+					cast = movieRepository.refreshMovieCast(tmdbId)
+					Timber.d("After refresh: ${cast.size} cast members")
+				} catch (e: Exception) {
+					Timber.w(e, "Failed to refresh cast data for movie $tmdbId")
+				}
+			}
+			
+			if (cast.isNotEmpty()) {
+				Timber.d("Cast members: ${cast.take(5).map { "${it.name} as ${it.character ?: it.job}" }}")
+			} else {
+				Timber.w("No cast data found for movie: ${movie.title} (TMDB ID: $tmdbId)")
+			}
+			val baseItem: BaseItemDto = createFakeMovieBaseItemDto(movie, cast)
+			callback(baseItem)
+		} else {
+			Timber.w("No movie found in database for TMDB ID: $tmdbId")
+			callback(null)
+		}
+	}
+}
+
+fun FullDetailsFragment.loadShowFromDatabase(tmdbId: Int, callback: (BaseItemDto?) -> Unit) {
+	val showRepository: ShowRepository by inject()
+	
+	lifecycleScope.launch {
+		val show: Show? = showRepository.getShowByTmdbId(tmdbId)
+		if (show != null) {
+			val cast: List<ShowCastMember> = showRepository.getShowCast(tmdbId)
+			val baseItem: BaseItemDto = createFakeShowBaseItemDto(show, cast)
+			callback(baseItem)
+		} else {
+			callback(null)
+		}
+	}
+}
 
 fun FullDetailsFragment.toggleFavorite() {
 	val itemMutationRepository by inject<ItemMutationRepository>()
@@ -399,4 +612,28 @@ fun FullDetailsFragment.getLiveTvChannel(
 			callback(channel)
 		}
 	}
+}
+
+/**
+ * Custom extension to ImageHelper that handles TMDB images for fake items
+ */
+fun org.jellyfin.androidtv.util.ImageHelper.getImageUrlWithTmdbSupport(image: JellyfinImage): String {
+	val itemIdString = image.item.toString()
+	
+	// Check if this is a fake Movie/Show UUID - if so, return TMDB URL
+	if (itemIdString.endsWith("-0000-0000-0000-000000000000") || itemIdString.endsWith("-1111-1111-1111-111111111111")) {
+		when {
+			image.type == ImageType.PRIMARY && image.tag.startsWith("tmdb-poster:") -> {
+				val posterPath = image.tag.substringAfter("tmdb-poster:")
+				return "https://image.tmdb.org/t/p/w500$posterPath"
+			}
+			image.type == ImageType.BACKDROP && image.tag.startsWith("tmdb-backdrop:") -> {
+				val backdropPath = image.tag.substringAfter("tmdb-backdrop:")
+				return "https://image.tmdb.org/t/p/w1280$backdropPath"
+			}
+		}
+	}
+	
+	// Fall back to default Jellyfin behavior for real items
+	return getImageUrl(image)
 }

@@ -81,6 +81,8 @@ import org.jellyfin.androidtv.util.sdk.BaseItemExtensionsKt;
 import org.jellyfin.androidtv.util.sdk.TrailerUtils;
 import org.jellyfin.androidtv.util.sdk.compat.JavaCompat;
 import org.jellyfin.sdk.model.api.BaseItemDto;
+import org.jellyfin.androidtv.data.repository.ImprovedMovieRepository;
+import org.jellyfin.androidtv.data.repository.ShowRepository;
 import org.jellyfin.sdk.model.api.BaseItemKind;
 import org.jellyfin.sdk.model.api.BaseItemPerson;
 import org.jellyfin.sdk.model.api.MediaSourceInfo;
@@ -375,15 +377,52 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
         } else if (mSeriesTimerInfo != null) {
             setBaseItem(FullDetailsFragmentHelperKt.createFakeSeriesTimerBaseItemDto(this, mSeriesTimerInfo));
         } else {
-            FullDetailsFragmentHelperKt.getItem(FullDetailsFragment.this, id, item -> {
-                if (item != null) {
-                    setBaseItem(item);
-                } else {
-                    // Failed to load item
+            // Check if this is one of our fake Movie/Show IDs
+            String idString = id.toString();
+            if (idString.endsWith("-0000-0000-0000-000000000000")) {
+                // This is a fake Movie ID - extract TMDB ID and load from local database
+                String tmdbIdString = idString.substring(0, idString.indexOf("-0000-0000-0000-000000000000"));
+                try {
+                    int tmdbId = Integer.parseInt(tmdbIdString);
+                    FullDetailsFragmentHelperKt.loadMovieFromDatabase(this, tmdbId, baseItem -> {
+                        if (baseItem != null) {
+                            setBaseItem(baseItem);
+                        } else {
+                            navigationRepository.getValue().goBack();
+                        }
+                        return null;
+                    });
+                } catch (NumberFormatException e) {
                     navigationRepository.getValue().goBack();
                 }
-                return null;
-            });
+            } else if (idString.endsWith("-1111-1111-1111-111111111111")) {
+                // This is a fake Show ID - extract TMDB ID and load from local database
+                String tmdbIdString = idString.substring(0, idString.indexOf("-1111-1111-1111-111111111111"));
+                try {
+                    int tmdbId = Integer.parseInt(tmdbIdString);
+                    FullDetailsFragmentHelperKt.loadShowFromDatabase(this, tmdbId, baseItem -> {
+                        if (baseItem != null) {
+                            setBaseItem(baseItem);
+                        } else {
+                            navigationRepository.getValue().goBack();
+                        }
+                        return null;
+                    });
+                } catch (NumberFormatException e) {
+                    navigationRepository.getValue().goBack();
+                }
+            } else {
+                // Regular Jellyfin item - load from API
+                FullDetailsFragmentHelperKt.getItem(FullDetailsFragment.this, id, item -> {
+                    if (item != null) {
+                        setBaseItem(item);
+                    } else {
+                        // Failed to load item
+                        navigationRepository.getValue().goBack();
+                    }
+                    return null;
+                });
+            }
         }
 
         mLastUpdated = Instant.now();

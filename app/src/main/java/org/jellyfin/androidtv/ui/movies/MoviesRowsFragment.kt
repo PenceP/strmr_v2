@@ -7,6 +7,7 @@ import androidx.leanback.app.RowsSupportFragment
 import androidx.leanback.widget.ArrayObjectAdapter
 import androidx.leanback.widget.HeaderItem
 import androidx.leanback.widget.ListRow
+import androidx.leanback.widget.OnItemViewClickedListener
 import androidx.leanback.widget.OnItemViewSelectedListener
 import androidx.leanback.widget.Presenter
 import androidx.leanback.widget.Row
@@ -25,11 +26,14 @@ import org.jellyfin.androidtv.ui.itemhandling.MovieRowItem
 import org.jellyfin.androidtv.ui.presentation.CardPresenter
 import org.jellyfin.androidtv.ui.presentation.MutableObjectAdapter
 import org.jellyfin.androidtv.ui.presentation.PositionableListRowPresenter
+import org.jellyfin.androidtv.ui.navigation.Destinations
+import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.koin.android.ext.android.inject
 import timber.log.Timber
 
 class MoviesRowsFragment : RowsSupportFragment(), View.OnKeyListener {
 	private val movieRepository by inject<ImprovedMovieRepository>()
+	private val navigationRepository by inject<NavigationRepository>()
 	
 	private val heroUpdateManager = HeroUpdateManager.getInstance()
 
@@ -51,6 +55,17 @@ class MoviesRowsFragment : RowsSupportFragment(), View.OnKeyListener {
 			if (item is MovieRowItem) {
 				heroUpdateManager.updateHeroMovie(item.movie)
 				Timber.d("Updated hero with movie: ${item.movie.title}")
+			}
+		}
+		
+		// Setup item click listener for navigation to details
+		onItemViewClickedListener = OnItemViewClickedListener { _, item, _, _ ->
+			if (item is MovieRowItem) {
+				// Navigate to movie details using the movie's TMDB ID as a fake UUID
+				val movieId = item.itemId
+				if (movieId != null) {
+					navigationRepository.navigate(Destinations.itemDetails(movieId))
+				}
 			}
 		}
 	}

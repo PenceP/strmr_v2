@@ -8,6 +8,7 @@ import org.jellyfin.androidtv.data.api.service.TraktApiService
 import org.jellyfin.androidtv.data.database.AppDatabase
 import org.jellyfin.androidtv.data.database.entity.Movie
 import org.jellyfin.androidtv.data.database.entity.MovieListEntry
+import org.jellyfin.androidtv.data.database.entity.CastMember
 import org.jellyfin.androidtv.data.mapper.MovieMapper
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
@@ -25,6 +26,7 @@ class ImprovedMovieRepository(
 ) {
     private val movieDao = database.movieDao()
     private val listEntryDao = database.movieListEntryDao()
+    private val castDao = database.castDao()
     
     companion object {
         const val PAGE_SIZE = 20
@@ -145,6 +147,9 @@ class ImprovedMovieRepository(
                     )
                     
                     movieDao.insertMovie(movie)
+                    
+                    // Also fetch cast data for this movie
+                    fetchAndCacheMovieCast(movieId)
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to fetch movie data for ID: $movieId")
                     // If we can't fetch but have old data, keep using it
@@ -219,6 +224,9 @@ class ImprovedMovieRepository(
                     )
                     
                     movieDao.insertMovie(movie)
+                    
+                    // Also fetch cast data for this movie
+                    fetchAndCacheMovieCast(movieId)
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to fetch movie data for ID: $movieId")
                     if (existingMovie == null) return@forEachIndexed
@@ -252,6 +260,87 @@ class ImprovedMovieRepository(
     suspend fun cleanupOldCache() {
         val cutoffTime = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(60)
         movieDao.deleteMoviesNotAccessedSince(cutoffTime)
+    }
+    
+    /**
+     * Get a specific movie by TMDB ID
+     */
+    suspend fun getMovieByTmdbId(tmdbId: Int): Movie? {
+        return movieDao.getMovieById(tmdbId)
+    }
+    
+    /**
+     * Get cast for a specific movie by TMDB ID
+     */
+    suspend fun getMovieCast(movieId: Int): List<CastMember> {
+        return castDao.getCastForMovie(movieId)
+    }
+    
+    /**
+     * Force refresh cast data for a specific movie
+     */
+    suspend fun refreshMovieCast(movieId: Int): List<CastMember> {
+        Timber.d("Force refreshing cast data for movie ID: $movieId")
+        fetchAndCacheMovieCast(movieId)
+        return castDao.getCastForMovie(movieId)
+    }
+    
+    /**
+     * Fetch and cache cast data for a movie
+     */
+    private suspend fun fetchAndCacheMovieCast(movieId: Int) {
+        try {
+            Timber.d("Fetching cast for movie ID: $movieId")
+            val creditsResponse = tmdbApiService.getMovieCredits(
+                movieId = movieId,
+                authorization = "Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
+            )
+            Timber.d("Received ${creditsResponse.cast.size} cast members and ${creditsResponse.crew.size} crew members")
+            
+            // Map cast members (limit to top 20 for performance)
+            val castMembers = creditsResponse.cast.take(20).map { tmdbCast ->
+                CastMember(
+                    movieId = movieId,
+                    tmdbCreditId = tmdbCast.credit_id,
+                    personId = tmdbCast.id,
+                    name = tmdbCast.name,
+                    character = tmdbCast.character,
+                    order = tmdbCast.order,
+                    profilePath = tmdbCast.profile_path,
+                    department = "Acting",
+                    job = null
+                )
+            }
+            
+            // Add key crew members (director, writer, producer)
+            val keyCrewMembers = creditsResponse.crew
+                .filter { crew ->
+                    crew.job in listOf("Director", "Writer", "Producer", "Executive Producer", "Screenplay")
+                }
+                .take(10) // Limit crew members
+                .mapIndexed { index, tmdbCrew ->
+                    CastMember(
+                        movieId = movieId,
+                        tmdbCreditId = tmdbCrew.credit_id,
+                        personId = tmdbCrew.id,
+                        name = tmdbCrew.name,
+                        character = null,
+                        order = 1000 + index, // Put crew after cast
+                        profilePath = tmdbCrew.profile_path,
+                        department = tmdbCrew.department,
+                        job = tmdbCrew.job
+                    )
+                }
+            
+            // Save all cast and crew to database
+            val allCastAndCrew = castMembers + keyCrewMembers
+            Timber.d("Saving ${allCastAndCrew.size} cast and crew members to database for movie ID: $movieId")
+            castDao.replaceMovieCast(movieId, allCastAndCrew)
+            Timber.d("Successfully saved cast data for movie ID: $movieId")
+            
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to fetch cast for movie ID: $movieId")
+        }
     }
     
     /**

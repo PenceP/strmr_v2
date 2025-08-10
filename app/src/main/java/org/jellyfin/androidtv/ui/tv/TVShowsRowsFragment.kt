@@ -7,6 +7,7 @@ import androidx.leanback.app.RowsSupportFragment
 import androidx.leanback.widget.ArrayObjectAdapter
 import androidx.leanback.widget.HeaderItem
 import androidx.leanback.widget.ListRow
+import androidx.leanback.widget.OnItemViewClickedListener
 import androidx.leanback.widget.OnItemViewSelectedListener
 import androidx.leanback.widget.Presenter
 import androidx.leanback.widget.Row
@@ -25,11 +26,14 @@ import org.jellyfin.androidtv.ui.itemhandling.ShowRowItem
 import org.jellyfin.androidtv.ui.presentation.CardPresenter
 import org.jellyfin.androidtv.ui.presentation.MutableObjectAdapter
 import org.jellyfin.androidtv.ui.presentation.PositionableListRowPresenter
+import org.jellyfin.androidtv.ui.navigation.Destinations
+import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.koin.android.ext.android.inject
 import timber.log.Timber
 
 class TVShowsRowsFragment : RowsSupportFragment(), View.OnKeyListener {
 	private val showRepository by inject<ShowRepository>()
+	private val navigationRepository by inject<NavigationRepository>()
 	
 	private val heroUpdateManager = HeroUpdateManager.getInstance()
 
@@ -51,6 +55,17 @@ class TVShowsRowsFragment : RowsSupportFragment(), View.OnKeyListener {
 			if (item is ShowRowItem) {
 				heroUpdateManager.updateHeroShow(item.show)
 				Timber.d("Updated hero with show: ${item.show.name}")
+			}
+		}
+		
+		// Setup item click listener for navigation to details
+		onItemViewClickedListener = OnItemViewClickedListener { _, item, _, _ ->
+			if (item is ShowRowItem) {
+				// Navigate to show details using the show's TMDB ID as a fake UUID
+				val showId = item.itemId
+				if (showId != null) {
+					navigationRepository.navigate(Destinations.itemDetails(showId))
+				}
 			}
 		}
 	}

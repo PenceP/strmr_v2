@@ -8,6 +8,7 @@ import org.jellyfin.androidtv.data.api.service.TraktApiService
 import org.jellyfin.androidtv.data.database.AppDatabase
 import org.jellyfin.androidtv.data.database.entity.Show
 import org.jellyfin.androidtv.data.database.entity.ShowListEntry
+import org.jellyfin.androidtv.data.database.entity.ShowCastMember
 import org.jellyfin.androidtv.data.mapper.ShowMapper
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
@@ -25,6 +26,7 @@ class ShowRepository(
 ) {
     private val showDao = database.showDao()
     private val listEntryDao = database.showListEntryDao()
+    private val castDao = database.castDao()
     
     companion object {
         const val PAGE_SIZE = 20
@@ -134,6 +136,9 @@ class ShowRepository(
                     showDao.insertShow(show)
                     existingShow = show
                     
+                    // Also fetch cast data for this show
+                    fetchAndCacheShowCast(showId)
+                    
                     Timber.d("Fetched fresh data for show: ${show.name}")
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to fetch TMDB data for show ID: $showId")
@@ -210,6 +215,9 @@ class ShowRepository(
                     showDao.insertShow(show)
                     existingShow = show
                     
+                    // Also fetch cast data for this show
+                    fetchAndCacheShowCast(showId)
+                    
                     Timber.d("Fetched fresh data for show: ${show.name}")
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to fetch TMDB data for show ID: $showId")
@@ -242,5 +250,72 @@ class ShowRepository(
         // Replace the entire list
         listEntryDao.replaceListEntries(LIST_TYPE_POPULAR, newListEntries)
         Timber.d("Updated popular shows list with ${newListEntries.size} entries")
+    }
+    
+    /**
+     * Get a specific show by TMDB ID
+     */
+    suspend fun getShowByTmdbId(tmdbId: Int): Show? {
+        return showDao.getShowById(tmdbId)
+    }
+    
+    /**
+     * Get cast for a specific show by TMDB ID
+     */
+    suspend fun getShowCast(showId: Int): List<ShowCastMember> {
+        return castDao.getCastForShow(showId)
+    }
+    
+    /**
+     * Fetch and cache cast data for a show
+     */
+    private suspend fun fetchAndCacheShowCast(showId: Int) {
+        try {
+            val creditsResponse = tmdbApiService.getShowCredits(
+                showId = showId,
+                authorization = "Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
+            )
+            
+            // Map cast members (limit to top 20 for performance)
+            val castMembers = creditsResponse.cast.take(20).map { tmdbCast ->
+                ShowCastMember(
+                    showId = showId,
+                    tmdbCreditId = tmdbCast.credit_id,
+                    personId = tmdbCast.id,
+                    name = tmdbCast.name,
+                    character = tmdbCast.character,
+                    order = tmdbCast.order,
+                    profilePath = tmdbCast.profile_path,
+                    department = "Acting",
+                    job = null
+                )
+            }
+            
+            // Add key crew members (creator, executive producer, producer)
+            val keyCrewMembers = creditsResponse.crew
+                .filter { crew ->
+                    crew.job in listOf("Creator", "Executive Producer", "Producer", "Director", "Writer")
+                }
+                .take(10) // Limit crew members
+                .mapIndexed { index, tmdbCrew ->
+                    ShowCastMember(
+                        showId = showId,
+                        tmdbCreditId = tmdbCrew.credit_id,
+                        personId = tmdbCrew.id,
+                        name = tmdbCrew.name,
+                        character = null,
+                        order = 1000 + index, // Put crew after cast
+                        profilePath = tmdbCrew.profile_path,
+                        department = tmdbCrew.department,
+                        job = tmdbCrew.job
+                    )
+                }
+            
+            // Save all cast and crew to database
+            castDao.replaceShowCast(showId, castMembers + keyCrewMembers)
+            
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to fetch cast for show ID: $showId")
+        }
     }
 }

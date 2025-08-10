@@ -20,7 +20,7 @@ class ShowRowItem(
 ) {
     override val showCardInfoOverlay: Boolean = false
     
-    override val itemId: UUID? get() = UUID.nameUUIDFromBytes(show.id.toString().toByteArray())
+    override val itemId: UUID? get() = UUID.fromString("${show.id}-1111-1111-1111-111111111111")
     
     override val isFavorite: Boolean = false
     override val isPlayed: Boolean = false

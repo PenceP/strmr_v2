@@ -8,6 +8,7 @@ import org.jellyfin.androidtv.data.api.model.tmdb.TmdbMovieReleasesResponse
 import org.jellyfin.androidtv.data.api.model.tmdb.TmdbShow
 import org.jellyfin.androidtv.data.api.model.tmdb.TmdbShowDetails
 import org.jellyfin.androidtv.data.api.model.tmdb.TmdbShowResponse
+import org.jellyfin.androidtv.data.api.model.tmdb.TmdbCreditsResponse
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Path
@@ -106,6 +107,26 @@ interface TmdbApiService {
         @Query("language") language: String = "en-US"
     ): TmdbShowResponse
     
+    /**
+     * Get movie credits (cast and crew)
+     */
+    @GET("movie/{movie_id}/credits")
+    suspend fun getMovieCredits(
+        @Path("movie_id") movieId: Int,
+        @Header("Authorization") authorization: String,
+        @Query("language") language: String = "en-US"
+    ): TmdbCreditsResponse
+    
+    /**
+     * Get TV show credits (cast and crew)
+     */
+    @GET("tv/{tv_id}/credits")
+    suspend fun getShowCredits(
+        @Path("tv_id") showId: Int,
+        @Header("Authorization") authorization: String,
+        @Query("language") language: String = "en-US"
+    ): TmdbCreditsResponse
+    
     companion object {
         const val BASE_URL = "https://api.themoviedb.org/3/"
         const val IMAGE_BASE_URL = "https://image.tmdb.org/t/p/"
@@ -115,6 +136,8 @@ interface TmdbApiService {
         const val POSTER_SIZE_W500 = "w500"
         const val BACKDROP_SIZE_W780 = "w780"
         const val BACKDROP_SIZE_W1280 = "w1280"
+        const val PROFILE_SIZE_W185 = "w185"
+        const val PROFILE_SIZE_W342 = "w342"
         
         fun getPosterUrl(posterPath: String?, size: String = POSTER_SIZE_W500): String? {
             return posterPath?.let { "$IMAGE_BASE_URL$size$it" }
@@ -122,6 +145,10 @@ interface TmdbApiService {
         
         fun getBackdropUrl(backdropPath: String?, size: String = BACKDROP_SIZE_W1280): String? {
             return backdropPath?.let { "$IMAGE_BASE_URL$size$it" }
+        }
+        
+        fun getProfileUrl(profilePath: String?, size: String = PROFILE_SIZE_W185): String? {
+            return profilePath?.let { "$IMAGE_BASE_URL$size$it" }
         }
     }
 }

@@ -20,7 +20,7 @@ class MovieRowItem(
 ) {
     override val showCardInfoOverlay: Boolean = false
     
-    override val itemId: UUID? get() = UUID.nameUUIDFromBytes(movie.id.toString().toByteArray())
+    override val itemId: UUID? get() = UUID.fromString("${movie.id}-0000-0000-0000-000000000000")
     
     override val isFavorite: Boolean = false
     override val isPlayed: Boolean = false

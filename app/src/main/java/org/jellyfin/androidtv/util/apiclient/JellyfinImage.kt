@@ -27,27 +27,54 @@ fun JellyfinImage.getUrl(
 	maxHeight: Int? = null,
 	fillWidth: Int? = null,
 	fillHeight: Int? = null,
-): String = when (source) {
-	JellyfinImageSource.USER -> api.imageApi.getUserImageUrl(
-		userId = item,
-		tag = tag,
-		imageIndex = index,
-		maxWidth = maxWidth,
-		maxHeight = maxHeight,
-		fillWidth = fillWidth,
-		fillHeight = fillHeight,
-	)
+): String {
+	val itemIdString = item.toString()
+	
+	// Check for fake Movie/Show UUIDs and person UUIDs, return TMDB URLs directly
+	if (itemIdString.endsWith("-0000-0000-0000-000000000000") || 
+	    itemIdString.endsWith("-1111-1111-1111-111111111111") ||
+	    itemIdString.startsWith("person-") || // Handle person profile images  
+	    tag?.startsWith("tmdb-profile:") == true // Handle TMDB profile images directly
+	   ) {
+		when {
+			type == ImageType.PRIMARY && tag.startsWith("tmdb-poster:") -> {
+				val posterPath = tag.substringAfter("tmdb-poster:")
+				return "https://image.tmdb.org/t/p/w500$posterPath"
+			}
+			type == ImageType.BACKDROP && tag.startsWith("tmdb-backdrop:") -> {
+				val backdropPath = tag.substringAfter("tmdb-backdrop:")
+				return "https://image.tmdb.org/t/p/w1280$backdropPath"
+			}
+			type == ImageType.PRIMARY && tag.startsWith("tmdb-profile:") -> {
+				val profilePath = tag.substringAfter("tmdb-profile:")
+				return "https://image.tmdb.org/t/p/w185$profilePath"
+			}
+		}
+	}
+	
+	// Fall back to default Jellyfin behavior for real items
+	return when (source) {
+		JellyfinImageSource.USER -> api.imageApi.getUserImageUrl(
+			userId = item,
+			tag = tag,
+			imageIndex = index,
+			maxWidth = maxWidth,
+			maxHeight = maxHeight,
+			fillWidth = fillWidth,
+			fillHeight = fillHeight,
+		)
 
-	else -> api.imageApi.getItemImageUrl(
-		itemId = item,
-		imageType = type,
-		tag = tag,
-		imageIndex = index,
-		maxWidth = maxWidth,
-		maxHeight = maxHeight,
-		fillWidth = fillWidth,
-		fillHeight = fillHeight,
-	)
+		else -> api.imageApi.getItemImageUrl(
+			itemId = item,
+			imageType = type,
+			tag = tag,
+			imageIndex = index,
+			maxWidth = maxWidth,
+			maxHeight = maxHeight,
+			fillWidth = fillWidth,
+			fillHeight = fillHeight,
+		)
+	}
 }
 
 enum class JellyfinImageSource {

@@ -12,14 +12,17 @@ import org.jellyfin.androidtv.data.database.dao.MovieDao
 import org.jellyfin.androidtv.data.database.dao.MovieListEntryDao
 import org.jellyfin.androidtv.data.database.dao.ShowDao
 import org.jellyfin.androidtv.data.database.dao.ShowListEntryDao
+import org.jellyfin.androidtv.data.database.dao.CastDao
 import org.jellyfin.androidtv.data.database.entity.Movie
 import org.jellyfin.androidtv.data.database.entity.MovieListEntry
 import org.jellyfin.androidtv.data.database.entity.Show
 import org.jellyfin.androidtv.data.database.entity.ShowListEntry
+import org.jellyfin.androidtv.data.database.entity.CastMember
+import org.jellyfin.androidtv.data.database.entity.ShowCastMember
 
 @Database(
-    entities = [Movie::class, MovieListEntry::class, Show::class, ShowListEntry::class],
-    version = 4,
+    entities = [Movie::class, MovieListEntry::class, Show::class, ShowListEntry::class, CastMember::class, ShowCastMember::class],
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -29,6 +32,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun movieListEntryDao(): MovieListEntryDao
     abstract fun showDao(): ShowDao
     abstract fun showListEntryDao(): ShowListEntryDao
+    abstract fun castDao(): CastDao
     
     companion object {
         @Volatile
@@ -163,6 +167,48 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
         
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Create cast_members table for movies
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS cast_members (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        movieId INTEGER NOT NULL,
+                        tmdbCreditId TEXT NOT NULL,
+                        personId INTEGER NOT NULL,
+                        name TEXT NOT NULL,
+                        character TEXT,
+                        `order` INTEGER NOT NULL,
+                        profilePath TEXT,
+                        department TEXT NOT NULL,
+                        job TEXT,
+                        FOREIGN KEY(movieId) REFERENCES movies(id) ON DELETE CASCADE
+                    )
+                """)
+                
+                database.execSQL("CREATE INDEX index_cast_members_movieId ON cast_members(movieId)")
+                
+                // Create show_cast_members table for TV shows
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS show_cast_members (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        showId INTEGER NOT NULL,
+                        tmdbCreditId TEXT NOT NULL,
+                        personId INTEGER NOT NULL,
+                        name TEXT NOT NULL,
+                        character TEXT,
+                        `order` INTEGER NOT NULL,
+                        profilePath TEXT,
+                        department TEXT NOT NULL,
+                        job TEXT,
+                        FOREIGN KEY(showId) REFERENCES shows(id) ON DELETE CASCADE
+                    )
+                """)
+                
+                database.execSQL("CREATE INDEX index_show_cast_members_showId ON show_cast_members(showId)")
+            }
+        }
+        
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -170,7 +216,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "trakt_movies_database"
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .build()
                 INSTANCE = instance
                 instance
