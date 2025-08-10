@@ -260,6 +260,13 @@ class ShowRepository(
     }
     
     /**
+     * Get a specific show by Trakt ID
+     */
+    suspend fun getShowByTraktId(traktId: Int): Show? {
+        return showDao.getShowByTraktId(traktId)
+    }
+    
+    /**
      * Get cast for a specific show by TMDB ID
      */
     suspend fun getShowCast(showId: Int): List<ShowCastMember> {

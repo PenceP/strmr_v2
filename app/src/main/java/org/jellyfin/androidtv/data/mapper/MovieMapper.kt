@@ -47,7 +47,9 @@ object MovieMapper {
             traktSlug = traktMovie.ids.slug,
             runtime = tmdbMovieDetails?.runtime,
             certification = extractCertification(releasesResponse),
-            rottenTomatoesRating = null // Not available from current APIs
+            rottenTomatoesRating = null, // Not available from current APIs
+            collectionId = tmdbMovieDetails?.belongsToCollection?.id,
+            collectionName = tmdbMovieDetails?.belongsToCollection?.name
         )
     }
     
@@ -79,7 +81,9 @@ object MovieMapper {
             traktSlug = traktMovie.ids.slug,
             runtime = tmdbMovieDetails?.runtime,
             certification = extractCertification(releasesResponse),
-            rottenTomatoesRating = null // Not available from current APIs
+            rottenTomatoesRating = null, // Not available from current APIs
+            collectionId = tmdbMovieDetails?.belongsToCollection?.id,
+            collectionName = tmdbMovieDetails?.belongsToCollection?.name
         )
     }
     
@@ -111,7 +115,9 @@ object MovieMapper {
             traktSlug = traktMovie.ids.slug,
             runtime = null, // Not available in TmdbMovie
             certification = null, // Not available without releases call
-            rottenTomatoesRating = null // Not available from current APIs
+            rottenTomatoesRating = null, // Not available from current APIs
+            collectionId = null, // Not available from basic TMDB data
+            collectionName = null // Not available from basic TMDB data
         )
     }
     
@@ -142,7 +148,9 @@ object MovieMapper {
             traktSlug = traktMovie.ids.slug,
             runtime = null,
             certification = null,
-            rottenTomatoesRating = null
+            rottenTomatoesRating = null,
+            collectionId = null,
+            collectionName = null
         )
     }
     
@@ -172,7 +180,9 @@ object MovieMapper {
             traktSlug = traktMovie.ids.slug,
             runtime = null,
             certification = null,
-            rottenTomatoesRating = null
+            rottenTomatoesRating = null,
+            collectionId = null,
+            collectionName = null
         )
     }
 }

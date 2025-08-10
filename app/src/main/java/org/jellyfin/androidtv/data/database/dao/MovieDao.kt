@@ -39,4 +39,7 @@ interface MovieDao {
     
     @Query("UPDATE movies SET lastAccessedAt = :timestamp WHERE id = :movieId")
     suspend fun updateLastAccessed(movieId: Int, timestamp: Long)
+    
+    @Query("SELECT * FROM movies WHERE traktId = :traktId LIMIT 1")
+    suspend fun getMovieByTraktId(traktId: Int): Movie?
 }

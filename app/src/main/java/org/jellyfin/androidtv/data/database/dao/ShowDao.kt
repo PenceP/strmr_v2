@@ -39,4 +39,7 @@ interface ShowDao {
     
     @Query("UPDATE shows SET lastAccessedAt = :timestamp WHERE id = :showId")
     suspend fun updateLastAccessed(showId: Int, timestamp: Long)
+    
+    @Query("SELECT * FROM shows WHERE traktId = :traktId LIMIT 1")
+    suspend fun getShowByTraktId(traktId: Int): Show?
 }

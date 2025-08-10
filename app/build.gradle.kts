@@ -29,7 +29,7 @@ android {
 		applicationId = namespace
 		versionName = project.getVersionName()
 		versionCode = getVersionCode(versionName!!)
-		
+
 		// Add BuildConfig fields for API keys
 		buildConfigField("String", "TRAKT_CLIENT_ID", '"' + secretsProperties.getProperty("TRAKT_CLIENT_ID", "") + '"')
 		buildConfigField("String", "TRAKT_CLIENT_SECRET", '"' + secretsProperties.getProperty("TRAKT_CLIENT_SECRET", "") + '"')
@@ -60,7 +60,7 @@ android {
 			resValue("string", "app_name", "@string/app_name_release")
 
 			buildConfigField("boolean", "DEVELOPMENT", "false")
-		}
+        }
 
 		debug {
 			// Use different application id to run release and debug at the same time
@@ -180,12 +180,12 @@ dependencies {
 	implementation(libs.androidx.room.ktx)
 	implementation(libs.androidx.room.paging)
 	kapt(libs.androidx.room.compiler)
-	
+
 	// Networking
 	implementation(libs.retrofit)
 	implementation(libs.retrofit.converter.kotlinx.serialization)
 	implementation(libs.okhttp.logging.interceptor)
-	
+
 	// Pagination
 	implementation(libs.androidx.paging.runtime)
 	implementation(libs.androidx.paging.compose)
@@ -197,7 +197,7 @@ dependencies {
 	testImplementation(libs.kotlinx.coroutines.test)
 	testImplementation(libs.androidx.paging.testing)
 	testImplementation(libs.squareup.okhttp3.mockwebserver)
-	
+
 	// Integration/Android Testing
 	androidTestImplementation(libs.androidx.test.ext.junit)
 	androidTestImplementation(libs.androidx.test.espresso.core)

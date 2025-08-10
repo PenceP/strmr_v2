@@ -9,6 +9,7 @@ import org.jellyfin.androidtv.data.api.model.tmdb.TmdbShow
 import org.jellyfin.androidtv.data.api.model.tmdb.TmdbShowDetails
 import org.jellyfin.androidtv.data.api.model.tmdb.TmdbShowResponse
 import org.jellyfin.androidtv.data.api.model.tmdb.TmdbCreditsResponse
+import org.jellyfin.androidtv.data.api.model.tmdb.TmdbCollectionDetails
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Path
@@ -126,6 +127,38 @@ interface TmdbApiService {
         @Header("Authorization") authorization: String,
         @Query("language") language: String = "en-US"
     ): TmdbCreditsResponse
+    
+    /**
+     * Get collection details
+     */
+    @GET("collection/{collection_id}")
+    suspend fun getCollectionDetails(
+        @Path("collection_id") collectionId: Int,
+        @Header("Authorization") authorization: String,
+        @Query("language") language: String = "en-US"
+    ): TmdbCollectionDetails
+    
+    /**
+     * Get similar movies
+     */
+    @GET("movie/{movie_id}/similar")
+    suspend fun getSimilarMovies(
+        @Path("movie_id") movieId: Int,
+        @Header("Authorization") authorization: String,
+        @Query("language") language: String = "en-US",
+        @Query("page") page: Int = 1
+    ): TmdbMovieResponse
+    
+    /**
+     * Get similar TV shows
+     */
+    @GET("tv/{tv_id}/similar")
+    suspend fun getSimilarShows(
+        @Path("tv_id") showId: Int,
+        @Header("Authorization") authorization: String,
+        @Query("language") language: String = "en-US",
+        @Query("page") page: Int = 1
+    ): TmdbShowResponse
     
     companion object {
         const val BASE_URL = "https://api.themoviedb.org/3/"

@@ -270,6 +270,20 @@ class ImprovedMovieRepository(
     }
     
     /**
+     * Get a specific movie by Trakt ID
+     */
+    suspend fun getMovieByTraktId(traktId: Int): Movie? {
+        return movieDao.getMovieByTraktId(traktId)
+    }
+    
+    /**
+     * Update a movie in the database
+     */
+    suspend fun updateMovie(movie: Movie) {
+        movieDao.insertMovie(movie)
+    }
+    
+    /**
      * Get cast for a specific movie by TMDB ID
      */
     suspend fun getMovieCast(movieId: Int): List<CastMember> {

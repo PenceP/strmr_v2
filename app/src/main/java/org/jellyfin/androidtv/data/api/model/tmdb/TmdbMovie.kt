@@ -78,7 +78,9 @@ data class TmdbMovieDetails(
     @SerialName("adult")
     val adult: Boolean,
     @SerialName("runtime")
-    val runtime: Int?
+    val runtime: Int?,
+    @SerialName("belongs_to_collection")
+    val belongsToCollection: TmdbCollection?
 )
 
 @Serializable
@@ -145,4 +147,32 @@ data class TmdbReleaseDate(
     val releaseDate: String = "",
     @SerialName("type")
     val type: Int
+)
+
+@Serializable
+data class TmdbCollection(
+    @SerialName("id")
+    val id: Int,
+    @SerialName("name")
+    val name: String,
+    @SerialName("poster_path")
+    val posterPath: String?,
+    @SerialName("backdrop_path")
+    val backdropPath: String?
+)
+
+@Serializable
+data class TmdbCollectionDetails(
+    @SerialName("id")
+    val id: Int,
+    @SerialName("name")
+    val name: String,
+    @SerialName("overview")
+    val overview: String?,
+    @SerialName("poster_path")
+    val posterPath: String?,
+    @SerialName("backdrop_path")
+    val backdropPath: String?,
+    @SerialName("parts")
+    val parts: List<TmdbMovie>
 )

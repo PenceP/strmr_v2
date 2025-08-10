@@ -3,6 +3,7 @@ package org.jellyfin.androidtv.ui.itemdetail
 import android.content.ActivityNotFoundException
 import android.view.View
 import android.widget.Toast
+import org.jellyfin.androidtv.BuildConfig
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
@@ -25,14 +26,24 @@ import org.jellyfin.androidtv.data.database.entity.Movie
 import org.jellyfin.androidtv.data.database.entity.Show
 import org.jellyfin.androidtv.data.repository.ImprovedMovieRepository
 import org.jellyfin.androidtv.data.repository.ShowRepository
+import org.jellyfin.androidtv.data.api.service.TmdbApiService
+import org.jellyfin.androidtv.data.api.service.TraktApiService
 import org.jellyfin.androidtv.data.database.entity.CastMember
 import org.jellyfin.androidtv.data.database.entity.ShowCastMember
 import org.jellyfin.androidtv.util.TmdbGenreMapper
+import org.jellyfin.androidtv.ui.itemhandling.ItemRowAdapter
+import org.jellyfin.androidtv.constant.QueryType
+import org.jellyfin.androidtv.ui.presentation.CardPresenter
+import org.jellyfin.androidtv.ui.presentation.MutableObjectAdapter
+import androidx.leanback.widget.HeaderItem
+import androidx.leanback.widget.ListRow
+import androidx.leanback.widget.Row
 import org.jellyfin.sdk.api.client.ApiClient
 import timber.log.Timber
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import org.jellyfin.androidtv.util.apiclient.JellyfinImage
 import org.jellyfin.sdk.model.api.ImageType
+import org.jellyfin.androidtv.util.ImageHelper
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.liveTvApi
@@ -134,7 +145,7 @@ fun FullDetailsFragment.createFakeMovieBaseItemDto(movie: Movie, cast: List<Cast
 		// Add runtime in ticks (1 minute = 600,000,000 ticks)
 		runTimeTicks = movie.runtime?.let { it * 60 * 10_000_000L },
 		// Add community rating (convert from 0-10 to 0-100 scale)
-		communityRating = if (movie.voteAverage > 0) (movie.voteAverage * 10).toFloat() else null,
+		communityRating = if (movie.voteAverage > 0) (movie.voteAverage).toFloat() else null,
 		// Add official rating (certification)
 		officialRating = movie.certification,
 		// Add production year
@@ -637,4 +648,357 @@ fun org.jellyfin.androidtv.util.ImageHelper.getImageUrlWithTmdbSupport(image: Je
 	
 	// Fall back to default Jellyfin behavior for real items
 	return getImageUrl(image)
+}
+
+fun FullDetailsFragment.addCollectionRow(
+	adapter: MutableObjectAdapter<Row>,
+	baseItem: BaseItemDto
+) {
+	val movieRepository by inject<ImprovedMovieRepository>()
+	val tmdbApiService by inject<TmdbApiService>()
+	val imageHelper by inject<ImageHelper>()
+	
+	// Only add collection row for movies
+	if (baseItem.type != BaseItemKind.MOVIE) return
+	
+	// Check if this is a fake movie ID from TMDB
+	val idString = baseItem.id.toString()
+	if (idString.endsWith("-0000-0000-0000-000000000000")) {
+		val tmdbIdString = idString.substring(0, idString.indexOf("-0000-0000-0000-000000000000"))
+		try {
+			val tmdbId = tmdbIdString.toInt()
+			
+			lifecycleScope.launch {
+				try {
+					// Get movie from database to check collection info
+					var movie = movieRepository.getMovieByTmdbId(tmdbId)
+					Timber.d("Movie from database: ${movie?.title}, Collection ID: ${movie?.collectionId}, Collection Name: ${movie?.collectionName}")
+					
+					// If movie doesn't have collection info, try to get it from TMDB movie details
+					if (movie?.collectionId == null) {
+						Timber.d("No collection info in database, fetching movie details from TMDB for ID: $tmdbId")
+						try {
+							val tmdbApiKey = "Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
+							val movieDetails = withContext(Dispatchers.IO) {
+								tmdbApiService.getMovieDetails(tmdbId, tmdbApiKey)
+							}
+							Timber.d("Movie details from TMDB: ${movieDetails.title}, Collection: ${movieDetails.belongsToCollection?.name}")
+							
+							if (movieDetails.belongsToCollection != null && movie != null) {
+								// Update the movie in database with collection info
+								val updatedMovie = movie.copy(
+									collectionId = movieDetails.belongsToCollection.id,
+									collectionName = movieDetails.belongsToCollection.name
+								)
+								movieRepository.updateMovie(updatedMovie)
+								movie = updatedMovie
+								Timber.d("Updated movie with collection info: ${updatedMovie.collectionName}")
+							}
+						} catch (e: Exception) {
+							Timber.e(e, "Failed to fetch movie details from TMDB for ID: $tmdbId")
+						}
+					}
+					
+					if (movie?.collectionId != null) {
+						// Fetch collection details from TMDB
+						val tmdbApiKey = "Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
+						val collectionDetails = withContext(Dispatchers.IO) {
+							tmdbApiService.getCollectionDetails(movie.collectionId, tmdbApiKey)
+						}
+						
+						// Convert collection movies to BaseItemDto list
+						val collectionItems: List<BaseItemDto> = collectionDetails.parts.mapNotNull { tmdbMovie ->
+							// Skip the current movie
+							if (tmdbMovie.id == tmdbId) return@mapNotNull null
+							
+							// Create fake BaseItemDto for collection movie
+							val fakeItemDto = BaseItemDto(
+								id = UUID.fromString("${tmdbMovie.id}-0000-0000-0000-000000000000"),
+								type = BaseItemKind.MOVIE,
+								mediaType = MediaType.VIDEO,
+								name = tmdbMovie.title,
+								overview = tmdbMovie.overview,
+								originalTitle = tmdbMovie.originalTitle,
+								communityRating = if (tmdbMovie.voteAverage > 0) (tmdbMovie.voteAverage * 10).toFloat() else null,
+								productionYear = tmdbMovie.releaseDate?.takeIf { it.length >= 4 }?.substring(0, 4)?.toIntOrNull(),
+								imageTags = if (!tmdbMovie.posterPath.isNullOrEmpty()) {
+									mapOf(ImageType.PRIMARY to "tmdb-poster:${tmdbMovie.posterPath}")
+								} else null,
+								backdropImageTags = if (!tmdbMovie.backdropPath.isNullOrEmpty()) {
+									listOf("tmdb-backdrop:${tmdbMovie.backdropPath}")
+								} else null
+							)
+							
+							fakeItemDto
+						}
+						
+						if (collectionItems.isNotEmpty()) {
+							withContext(Dispatchers.Main) {
+								val collectionAdapter = ItemRowAdapter(
+									requireContext(),
+									collectionItems.toMutableList(),
+									CardPresenter(),
+									adapter,
+									true
+								)
+								addItemRow(adapter, collectionAdapter, 2, collectionDetails.name)
+							}
+						}
+					}
+				} catch (e: Exception) {
+					Timber.e(e, "Failed to load collection for TMDB movie $tmdbId")
+				}
+			}
+		} catch (e: NumberFormatException) {
+			Timber.e(e, "Invalid TMDB ID in fake movie ID: $idString")
+		}
+	}
+}
+
+fun FullDetailsFragment.addTraktRelatedRow(
+	adapter: MutableObjectAdapter<Row>,
+	baseItem: BaseItemDto,
+	isTvShow: Boolean
+) {
+	val traktApiService by inject<TraktApiService>()
+	val movieRepository by inject<ImprovedMovieRepository>()
+	val showRepository by inject<ShowRepository>()
+	
+	// Check if this is a TMDB item
+	val idString = baseItem.id.toString()
+	val isTmdbMovie = idString.endsWith("-0000-0000-0000-000000000000")
+	val isTmdbShow = idString.endsWith("-1111-1111-1111-111111111111")
+	
+	if (!isTmdbMovie && !isTmdbShow) return
+	
+	val tmdbIdString = if (isTmdbMovie) {
+		idString.substring(0, idString.indexOf("-0000-0000-0000-000000000000"))
+	} else {
+		idString.substring(0, idString.indexOf("-1111-1111-1111-111111111111"))
+	}
+	
+	try {
+		val tmdbId = tmdbIdString.toInt()
+		
+		lifecycleScope.launch {
+			try {
+				val traktClientId = BuildConfig.TRAKT_CLIENT_ID
+				Timber.d("Trakt Client ID available: ${traktClientId.isNotEmpty()}")
+				
+				if (traktClientId.isEmpty()) {
+					Timber.w("Trakt Client ID not set, skipping related content")
+					return@launch
+				}
+				
+				if (isTvShow) {
+					// Get show from database to get Trakt slug
+					val show = showRepository.getShowByTmdbId(tmdbId)
+					Timber.d("Show from database: ${show?.name}, Trakt slug: ${show?.traktSlug}")
+					if (show?.traktSlug != null) {
+						// Get related shows from Trakt
+						val relatedShows = withContext(Dispatchers.IO) {
+							traktApiService.getRelatedShows(show.traktSlug, clientId = traktClientId)
+						}
+						
+						// First pass: check what's in database
+						val relatedItems = mutableListOf<BaseItemDto>()
+						val missingTmdbIds = mutableListOf<Pair<Int, String>>() // tmdbId to title
+						
+						relatedShows.take(10).forEach { traktShow ->
+							// Look up show in our database by Trakt ID
+							val dbShow = showRepository.getShowByTraktId(traktShow.ids.trakt)
+							if (dbShow != null) {
+								relatedItems.add(BaseItemDto(
+									id = UUID.fromString("${dbShow.id}-1111-1111-1111-111111111111"),
+									type = BaseItemKind.SERIES,
+									mediaType = MediaType.VIDEO,
+									name = dbShow.name,
+									overview = dbShow.overview,
+									originalTitle = dbShow.originalName,
+									communityRating = if (dbShow.voteAverage > 0) (dbShow.voteAverage * 10).toFloat() else null,
+									productionYear = dbShow.firstAirDate?.substring(0, 4)?.toIntOrNull(),
+									imageTags = if (!dbShow.posterPath.isNullOrEmpty()) {
+										mapOf(ImageType.PRIMARY to "tmdb-poster:${dbShow.posterPath}")
+									} else null,
+									backdropImageTags = if (!dbShow.backdropPath.isNullOrEmpty()) {
+										listOf("tmdb-backdrop:${dbShow.backdropPath}")
+									} else null
+								))
+							} else if (traktShow.ids.tmdb != null) {
+								// Add to list of missing shows to fetch
+								missingTmdbIds.add(traktShow.ids.tmdb to traktShow.title)
+							}
+						}
+						
+						// If we have missing shows and less than 5 in database, fetch from TMDB
+						if (missingTmdbIds.isNotEmpty() && relatedItems.size < 5) {
+							Timber.d("Found ${relatedItems.size} related shows in DB, fetching ${missingTmdbIds.size} missing from TMDB")
+							val tmdbApiService by inject<TmdbApiService>()
+							
+							// Fetch missing shows from TMDB (limit to 5 to avoid too many API calls)
+							missingTmdbIds.take(5 - relatedItems.size).forEach { (tmdbId, title) ->
+								try {
+									Timber.d("Fetching TV show details from TMDB for: $title (ID: $tmdbId)")
+									val tmdbShow = withContext(Dispatchers.IO) {
+										tmdbApiService.getShowDetails(
+											tmdbId,
+											"Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
+										)
+									}
+									
+									// Create a simple BaseItemDto from TMDB data
+									relatedItems.add(BaseItemDto(
+										id = UUID.fromString("$tmdbId-1111-1111-1111-111111111111"),
+										type = BaseItemKind.SERIES,
+										mediaType = MediaType.VIDEO,
+										name = tmdbShow.name,
+										overview = tmdbShow.overview,
+										originalTitle = tmdbShow.originalName,
+										communityRating = if (tmdbShow.voteAverage > 0) (tmdbShow.voteAverage * 10).toFloat() else null,
+										productionYear = tmdbShow.firstAirDate?.substring(0, 4)?.toIntOrNull(),
+										premiereDate = tmdbShow.firstAirDate?.let { 
+											try {
+												java.time.LocalDateTime.parse(it + "T00:00:00")
+											} catch (e: Exception) { null }
+										},
+										endDate = tmdbShow.lastAirDate?.let {
+											try {
+												java.time.LocalDateTime.parse(it + "T00:00:00")
+											} catch (e: Exception) { null }
+										},
+										status = tmdbShow.status,
+										imageTags = if (!tmdbShow.posterPath.isNullOrEmpty()) {
+											mapOf(ImageType.PRIMARY to "tmdb-poster:${tmdbShow.posterPath}")
+										} else null,
+										backdropImageTags = if (!tmdbShow.backdropPath.isNullOrEmpty()) {
+											listOf("tmdb-backdrop:${tmdbShow.backdropPath}")
+										} else null,
+										genres = tmdbShow.genres?.map { it.name }
+									))
+								} catch (e: Exception) {
+									Timber.w(e, "Failed to fetch TV show from TMDB: $title (ID: $tmdbId)")
+								}
+							}
+						}
+						
+						if (relatedItems.isNotEmpty()) {
+							withContext(Dispatchers.Main) {
+								val relatedAdapter = ItemRowAdapter(
+									requireContext(),
+									relatedItems.toMutableList(),
+									CardPresenter(),
+									adapter,
+									true
+								)
+								addItemRow(adapter, relatedAdapter, 6, getString(R.string.lbl_related))
+							}
+						}
+					}
+				} else {
+					// Get movie from database to get Trakt slug
+					val movie = movieRepository.getMovieByTmdbId(tmdbId)
+					Timber.d("Movie from database: ${movie?.title}, Trakt slug: ${movie?.traktSlug}")
+					if (movie?.traktSlug != null) {
+						// Get related movies from Trakt
+						val relatedMovies = withContext(Dispatchers.IO) {
+							traktApiService.getRelatedMovies(movie.traktSlug, clientId = traktClientId)
+						}
+						
+						// First pass: check what's in database
+						val relatedItems = mutableListOf<BaseItemDto>()
+						val missingTmdbIds = mutableListOf<Pair<Int, String>>() // tmdbId to title
+						
+						relatedMovies.take(10).forEach { traktMovie ->
+							// Look up movie in our database by Trakt ID
+							val dbMovie = movieRepository.getMovieByTraktId(traktMovie.ids.trakt)
+							if (dbMovie != null) {
+								relatedItems.add(BaseItemDto(
+									id = UUID.fromString("${dbMovie.id}-0000-0000-0000-000000000000"),
+									type = BaseItemKind.MOVIE,
+									mediaType = MediaType.VIDEO,
+									name = dbMovie.title,
+									overview = dbMovie.overview,
+									originalTitle = dbMovie.originalTitle,
+									communityRating = if (dbMovie.voteAverage > 0) (dbMovie.voteAverage * 10).toFloat() else null,
+									productionYear = dbMovie.releaseDate?.substring(0, 4)?.toIntOrNull(),
+									imageTags = if (!dbMovie.posterPath.isNullOrEmpty()) {
+										mapOf(ImageType.PRIMARY to "tmdb-poster:${dbMovie.posterPath}")
+									} else null,
+									backdropImageTags = if (!dbMovie.backdropPath.isNullOrEmpty()) {
+										listOf("tmdb-backdrop:${dbMovie.backdropPath}")
+									} else null
+								))
+							} else if (traktMovie.ids.tmdb != null) {
+								// Add to list of missing movies to fetch
+								missingTmdbIds.add(traktMovie.ids.tmdb to traktMovie.title)
+							}
+						}
+						
+						// If we have missing movies and less than 5 in database, fetch from TMDB
+						if (missingTmdbIds.isNotEmpty() && relatedItems.size < 5) {
+							Timber.d("Found ${relatedItems.size} related movies in DB, fetching ${missingTmdbIds.size} missing from TMDB")
+							val tmdbApiService by inject<TmdbApiService>()
+							
+							// Fetch missing movies from TMDB (limit to 5 to avoid too many API calls)
+							missingTmdbIds.take(5 - relatedItems.size).forEach { (tmdbId, title) ->
+								try {
+									Timber.d("Fetching movie details from TMDB for: $title (ID: $tmdbId)")
+									val tmdbMovie = withContext(Dispatchers.IO) {
+										tmdbApiService.getMovieDetails(
+											tmdbId,
+											"Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
+										)
+									}
+									
+									// Create a simple BaseItemDto from TMDB data
+									relatedItems.add(BaseItemDto(
+										id = UUID.fromString("$tmdbId-0000-0000-0000-000000000000"),
+										type = BaseItemKind.MOVIE,
+										mediaType = MediaType.VIDEO,
+										name = tmdbMovie.title,
+										overview = tmdbMovie.overview,
+										originalTitle = tmdbMovie.originalTitle,
+										communityRating = if (tmdbMovie.voteAverage > 0) (tmdbMovie.voteAverage * 10).toFloat() else null,
+										productionYear = tmdbMovie.releaseDate?.takeIf { it.length >= 4 }?.substring(0, 4)?.toIntOrNull(),
+										premiereDate = tmdbMovie.releaseDate?.let { 
+											try {
+												java.time.LocalDateTime.parse(it + "T00:00:00")
+											} catch (e: Exception) { null }
+										},
+										runTimeTicks = tmdbMovie.runtime?.let { it * 60 * 10_000_000L },
+										imageTags = if (!tmdbMovie.posterPath.isNullOrEmpty()) {
+											mapOf(ImageType.PRIMARY to "tmdb-poster:${tmdbMovie.posterPath}")
+										} else null,
+										backdropImageTags = if (!tmdbMovie.backdropPath.isNullOrEmpty()) {
+											listOf("tmdb-backdrop:${tmdbMovie.backdropPath}")
+										} else null,
+										genres = tmdbMovie.genres?.map { it.name }
+									))
+								} catch (e: Exception) {
+									Timber.w(e, "Failed to fetch movie from TMDB: $title (ID: $tmdbId)")
+								}
+							}
+						}
+						
+						if (relatedItems.isNotEmpty()) {
+							withContext(Dispatchers.Main) {
+								val relatedAdapter = ItemRowAdapter(
+									requireContext(),
+									relatedItems.toMutableList(),
+									CardPresenter(),
+									adapter,
+									true
+								)
+								addItemRow(adapter, relatedAdapter, 6, getString(R.string.lbl_related))
+							}
+						}
+					}
+				}
+			} catch (e: Exception) {
+				Timber.e(e, "Failed to load related content from Trakt for TMDB ID $tmdbId")
+			}
+		}
+	} catch (e: NumberFormatException) {
+		Timber.e(e, "Invalid TMDB ID: $tmdbIdString")
+	}
 }
