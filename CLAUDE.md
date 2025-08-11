@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Jellyfin Android TV is a Kotlin-based Android TV client for the Jellyfin media server. The project follows a multi-module architecture with clean separation between UI, playback, and preferences functionality.
+Strmr is a Kotlin-based Android TV streaming client. The project follows a multi-module architecture with clean separation between UI, playback, and preferences functionality.
 
 ## Common Development Commands
 
@@ -30,7 +30,7 @@ Jellyfin Android TV is a Kotlin-based Android TV client for the Jellyfin media s
 ```
 
 ### SDK Version Variants
-The project supports multiple Jellyfin SDK versions via gradle properties:
+The project supports multiple SDK versions via gradle properties:
 ```bash
 ./gradlew assembleDebug -Psdk.version=local     # Use local SNAPSHOT
 ./gradlew assembleDebug -Psdk.version=snapshot  # Use master-SNAPSHOT
@@ -42,7 +42,7 @@ The project supports multiple Jellyfin SDK versions via gradle properties:
 ### Module Structure
 - **app/**: Main application module with UI, activities, and dependency injection
 - **playback/core/**: Abstract playback interfaces and contracts
-- **playback/jellyfin/**: Jellyfin-specific playback implementation
+- **playback/jellyfin/**: Server-specific playback implementation
 - **playback/media3/exoplayer/**: ExoPlayer backend integration
 - **playback/media3/session/**: Media3 MediaSession integration
 - **preference/**: Shared preferences abstraction layer
@@ -81,14 +81,14 @@ The project supports multiple Jellyfin SDK versions via gradle properties:
 
 ### Version Management
 Custom semantic versioning in `buildSrc/` handles:
-- Environment variable resolution (`JELLYFIN_VERSION`)
+- Environment variable resolution (`STRMR_VERSION`)
 - Pre-release encoding (e.g., "2.0.0-rc.3" becomes version code 2000003)
 - Development builds have version codes < 100
 
 ### Playback Architecture
 Multi-backend system with plugin architecture:
 - Core interfaces define playback contracts
-- Jellyfin module implements server-specific logic
+- Server module implements streaming-specific logic
 - Media3/ExoPlayer provides actual media playback
 - Session module handles MediaSession integration for Android Auto/TV
 
@@ -99,7 +99,7 @@ Multi-backend system with plugin architecture:
 - **Navigation**: Custom navigation repository pattern
 
 ### Key Dependencies
-- **Jellyfin SDK**: `org.jellyfin.sdk:jellyfin-core` (1.7.0-beta.3)
+- **Streaming SDK**: `org.jellyfin.sdk:jellyfin-core` (1.7.0-beta.3)
 - **Media**: AndroidX Media3, custom FFmpeg with libass subtitle support
 - **Async**: Kotlin Coroutines (1.10.2)
 - **Serialization**: kotlinx-serialization for JSON handling

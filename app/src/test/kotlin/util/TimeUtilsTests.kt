@@ -1,4 +1,4 @@
-package org.jellyfin.androidtv.util
+package com.strmr.ai.util
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe

@@ -8,7 +8,7 @@
     android:background="@color/black">
 
     <!-- Backdrop Image -->
-    <org.jellyfin.androidtv.ui.AsyncImageView
+    <com.strmr.ai.ui.AsyncImageView
         android:id="@+id/hero_backdrop"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
