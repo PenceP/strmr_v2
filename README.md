@@ -1,5 +1,5 @@
-<h1 align="center">Jellyfin Android TV</h1>
-<h3 align="center">Part of the <a href="https://jellyfin.org">Jellyfin Project</a></h3>
+<h1 align="center">Strmr</h1>
+<h3 align="center">Android TV Streaming Client</h3>
 
 ---
 

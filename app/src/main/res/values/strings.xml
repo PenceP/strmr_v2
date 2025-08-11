@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
-    <string name="app_name_release" translatable="false" tools:ignore="UnusedResources">Jellyfin</string>
-    <string name="app_name_debug" translatable="false" tools:ignore="UnusedResources">Jellyfin Debug</string>
+    <string name="app_name_release" translatable="false" tools:ignore="UnusedResources">Strmr</string>
+    <string name="app_name_debug" translatable="false" tools:ignore="UnusedResources">Strmr</string>
     <string name="video_error_unknown_error">Failed to load video</string>
     <string name="loading">Loading…</string>
     <string name="btn_cancel">Cancel</string>
@@ -348,10 +348,10 @@
     <string name="user_picker_last_user_summary">Use the last active account</string>
     <string name="lbl_switch_user">Switch account</string>
     <string name="pref_theme_muted_purple">Muted purple</string>
-    <string name="no_network_permissions">Jellyfin requires network permissions to function</string>
+    <string name="no_network_permissions">Strmr requires network permissions to function</string>
     <string name="press_to_close">Press to close</string>
     <string name="saved_servers">Saved servers</string>
-    <string name="welcome_title">Welcome to Jellyfin!</string>
+    <string name="welcome_title">Welcome to Strmr!</string>
     <string name="welcome_content">Connect to your server to get started.</string>
     <string name="no_user_warning">We couldn\'t find any accounts!\nAdd a new account by pressing the \"Add account\" button.</string>
     <string name="who_is_watching">Who\'s watching?</string>
@@ -385,7 +385,7 @@
     <string name="advanced_settings">Advanced</string>
     <string name="select_version">Version</string>
     <string name="licenses_link">Licenses</string>
-    <string name="licenses_link_description">View the licenses of the libraries used by the Jellyfin app</string>
+    <string name="licenses_link_description">View the licenses of the libraries used by the Strmr app</string>
     <string name="license_description">Description</string>
     <string name="license_version">Version</string>
     <string name="license_artifact">Artifact</string>
@@ -405,7 +405,7 @@
     <string name="home_section_livetv">Live TV</string>
     <string name="home_section_none">None</string>
     <string name="home_section_i">Home section %1$d</string>
-    <string name="searchable_hint">Search Jellyfin</string>
+    <string name="searchable_hint">Search Strmr</string>
     <string name="searchable_settings_description">Media</string>
     <string name="pref_subtitles_background_title">Enable background</string>
     <string name="pref_subtitles_background_summary">Show a black background behind the subtitles</string>

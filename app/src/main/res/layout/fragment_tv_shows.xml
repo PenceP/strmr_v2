@@ -23,7 +23,7 @@
     <!-- Content Area with top padding for toolbar -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/content_view"
-        android:name="org.jellyfin.androidtv.ui.tv.TVShowsRowsFragment"
+        android:name="com.strmr.ai.ui.tv.TVShowsRowsFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginTop="280dp"

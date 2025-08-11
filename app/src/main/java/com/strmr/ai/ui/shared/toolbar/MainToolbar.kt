@@ -1,0 +1,180 @@
+package com.strmr.ai.ui.shared.toolbar
+
+import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusRestorer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
+import kotlinx.coroutines.flow.filterNotNull
+import com.strmr.ai.R
+import com.strmr.ai.auth.repository.SessionRepository
+import com.strmr.ai.auth.repository.UserRepository
+import com.strmr.ai.ui.NowPlayingComposable
+import com.strmr.ai.ui.base.Icon
+import com.strmr.ai.ui.base.JellyfinTheme
+import com.strmr.ai.ui.base.ProvideTextStyle
+import com.strmr.ai.ui.base.Text
+import com.strmr.ai.ui.base.button.Button
+import com.strmr.ai.ui.base.button.ButtonDefaults
+import com.strmr.ai.ui.base.button.IconButton
+import com.strmr.ai.ui.base.button.IconButtonDefaults
+import com.strmr.ai.ui.navigation.ActivityDestinations
+import com.strmr.ai.ui.navigation.Destinations
+import com.strmr.ai.ui.navigation.NavigationRepository
+import com.strmr.ai.ui.playback.MediaManager
+import com.strmr.ai.util.apiclient.getUrl
+import com.strmr.ai.util.apiclient.primaryImage
+import org.jellyfin.sdk.api.client.ApiClient
+import org.koin.compose.koinInject
+
+enum class MainToolbarActiveButton {
+	Search,
+	Home,
+	Movies,
+	TVShows,
+
+	None,
+}
+
+@Composable
+fun MainToolbar(
+	activeButton: MainToolbarActiveButton = MainToolbarActiveButton.None,
+) {
+	val userRepository = koinInject<UserRepository>()
+	val api = koinInject<ApiClient>()
+
+	// Prevent user image to disappear when signing out by skipping null values
+	val currentUser by remember { userRepository.currentUser.filterNotNull() }.collectAsState(null)
+	val userImage = remember(currentUser) { currentUser?.primaryImage?.getUrl(api) }
+
+	MainToolbar(
+		userImage = userImage,
+		activeButton = activeButton,
+	)
+}
+
+@Composable
+private fun MainToolbar(
+	userImage: String? = null,
+	activeButton: MainToolbarActiveButton,
+) {
+	val focusRequester = remember { FocusRequester() }
+	val navigationRepository = koinInject<NavigationRepository>()
+	val mediaManager = koinInject<MediaManager>()
+	val sessionRepository = koinInject<SessionRepository>()
+	val activity = LocalActivity.current
+	val activeButtonColors = ButtonDefaults.colors(
+		containerColor = JellyfinTheme.colorScheme.buttonActive,
+		contentColor = JellyfinTheme.colorScheme.onButtonActive,
+	)
+
+	Toolbar(
+		modifier = Modifier
+			.focusRestorer(focusRequester)
+			.focusGroup(),
+		start = {
+			ToolbarButtons {
+				val userImagePainter = rememberAsyncImagePainter(userImage)
+				val userImageState by userImagePainter.state.collectAsState()
+				val userImageVisible = userImageState is AsyncImagePainter.State.Success
+
+				IconButton(
+					onClick = {
+						if (activeButton != MainToolbarActiveButton.Search) {
+							navigationRepository.navigate(Destinations.search())
+						}
+					},
+					colors = if (activeButton == MainToolbarActiveButton.Search) activeButtonColors else ButtonDefaults.colors(),
+				) {
+					Icon(
+						imageVector = ImageVector.vectorResource(R.drawable.ic_search),
+						contentDescription = stringResource(R.string.lbl_search),
+					)
+				}
+
+				NowPlayingComposable(
+					onFocusableChange = {},
+				)
+			}
+		},
+		center = {
+			ToolbarButtons(
+				modifier = Modifier
+					.focusRequester(focusRequester)
+			) {
+				ProvideTextStyle(JellyfinTheme.typography.default.copy(fontWeight = FontWeight.Bold)) {
+					Button(
+						onClick = {
+							if (activeButton != MainToolbarActiveButton.Home) {
+								navigationRepository.navigate(
+									Destinations.home,
+									replace = true,
+								)
+							}
+						},
+						colors = if (activeButton == MainToolbarActiveButton.Home) activeButtonColors else ButtonDefaults.colors(),
+						content = { Text(stringResource(R.string.lbl_home)) }
+					)
+					Button(
+						onClick = {
+							if (activeButton != MainToolbarActiveButton.Movies) {
+								navigationRepository.navigate(
+									Destinations.movies,
+									replace = true,
+								)
+							}
+						},
+						colors = if (activeButton == MainToolbarActiveButton.Movies) activeButtonColors else ButtonDefaults.colors(),
+						content = { Text(stringResource(R.string.lbl_movies)) }
+					)
+					Button(
+						onClick = {
+							if (activeButton != MainToolbarActiveButton.TVShows) {
+								navigationRepository.navigate(
+									Destinations.tvShows,
+									replace = true,
+								)
+							}
+						},
+						colors = if (activeButton == MainToolbarActiveButton.TVShows) activeButtonColors else ButtonDefaults.colors(),
+						content = { Text(stringResource(R.string.lbl_tv_series)) }
+					)
+				}
+			}
+		},
+		end = {
+			ToolbarButtons {
+				IconButton(
+					onClick = {
+						activity?.startActivity(ActivityDestinations.userPreferences(activity))
+					},
+				) {
+					Icon(
+						imageVector = ImageVector.vectorResource(R.drawable.ic_settings),
+						contentDescription = stringResource(R.string.lbl_settings),
+					)
+				}
+
+				ToolbarClock()
+			}
+		}
+	)
+}
