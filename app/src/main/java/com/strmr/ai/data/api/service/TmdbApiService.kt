@@ -10,6 +10,7 @@ import com.strmr.ai.data.api.model.tmdb.TmdbShowDetails
 import com.strmr.ai.data.api.model.tmdb.TmdbShowResponse
 import com.strmr.ai.data.api.model.tmdb.TmdbCreditsResponse
 import com.strmr.ai.data.api.model.tmdb.TmdbCollectionDetails
+import com.strmr.ai.data.api.model.tmdb.TmdbVideoResponse
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Path
@@ -159,6 +160,16 @@ interface TmdbApiService {
         @Query("language") language: String = "en-US",
         @Query("page") page: Int = 1
     ): TmdbShowResponse
+    
+    /**
+     * Get movie videos (trailers, teasers, clips, etc.)
+     */
+    @GET("movie/{movie_id}/videos")
+    suspend fun getMovieVideos(
+        @Path("movie_id") movieId: Int,
+        @Header("Authorization") authorization: String,
+        @Query("language") language: String = "en-US"
+    ): TmdbVideoResponse
     
     companion object {
         const val BASE_URL = "https://api.themoviedb.org/3/"

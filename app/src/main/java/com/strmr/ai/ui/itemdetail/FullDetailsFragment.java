@@ -803,6 +803,8 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
     TextUnderButton moreButton;
     TextUnderButton playButton = null;
     TextUnderButton trailerButton = null;
+    TextUnderButton collectionButton = null;
+    TextUnderButton watchlistButton = null;
 
     private void addButtons(int buttonSize) {
         BaseItemDto baseItem = mBaseItem;
@@ -835,6 +837,17 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
                 }
             });
             mDetailsOverviewRow.addAction(playButton);
+
+            // Add trailer button to top row right after play button for movies
+            if (mBaseItem.getType() == BaseItemKind.MOVIE) {
+                trailerButton = TextUnderButton.create(requireContext(), R.drawable.ic_trailer, buttonSize, 0, getString(R.string.lbl_play_trailers), new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        FullDetailsFragmentHelperKt.playTrailers(FullDetailsFragment.this);
+                    }
+                });
+                mDetailsOverviewRow.addAction(trailerButton);
+            }
 
             if (isSeries && !isStarted) {
                 FullDetailsFragmentHelperKt.getNextUpEpisode(this, nextUpEpisode -> {
@@ -896,16 +909,6 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
             mDetailsOverviewRow.addAction(mVersionsButton);
         }
 
-        if (TrailerUtils.hasPlayableTrailers(requireContext(), mBaseItem)) {
-            trailerButton = TextUnderButton.create(requireContext(), R.drawable.ic_trailer, buttonSize, 0, getString(R.string.lbl_play_trailers), new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    FullDetailsFragmentHelperKt.playTrailers(FullDetailsFragment.this);
-                }
-            });
-
-            mDetailsOverviewRow.addAction(trailerButton);
-        }
 
         if (mProgramInfo != null && Utils.canManageRecordings(KoinJavaComponent.<UserRepository>get(UserRepository.class).getCurrentUser().getValue())) {
             if (mBaseItem.getEndDate().isAfter(LocalDateTime.now())) {
@@ -1002,12 +1005,31 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
         org.jellyfin.sdk.model.api.UserItemDataDto userData = mBaseItem.getUserData();
         if (userData != null && mProgramInfo == null) {
             if (mBaseItem.getType() != BaseItemKind.MUSIC_ARTIST && mBaseItem.getType() != BaseItemKind.PERSON) {
-                mWatchedToggleButton = TextUnderButton.create(requireContext(), R.drawable.ic_watch, buttonSize, 0, getString(R.string.lbl_watched), markWatchedListener);
+                mWatchedToggleButton = TextUnderButton.create(requireContext(), R.drawable.ic_eye, buttonSize, 0, getString(R.string.lbl_watched), markWatchedListener);
                 mWatchedToggleButton.setActivated(userData.getPlayed());
                 mDetailsOverviewRow.addAction(mWatchedToggleButton);
             }
+            
+            // Add Trakt buttons for movies
+            if (mBaseItem.getType() == BaseItemKind.MOVIE) {
+                collectionButton = TextUnderButton.create(requireContext(), R.drawable.ic_collection, buttonSize, 0, "Collection", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        // TODO: Implement collection functionality
+                    }
+                });
+                mDetailsOverviewRow.addAction(collectionButton);
+                
+                watchlistButton = TextUnderButton.create(requireContext(), R.drawable.ic_watchlist, buttonSize, 0, "Watchlist", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        // TODO: Implement watchlist functionality  
+                    }
+                });
+                mDetailsOverviewRow.addAction(watchlistButton);
+            }
 
-            //Favorite
+            //Favorite - removed from default button layout
             favButton = TextUnderButton.create(requireContext(), R.drawable.ic_heart, buttonSize, 2, getString(R.string.lbl_favorite), new View.OnClickListener() {
                 @Override
                 public void onClick(final View v) {
@@ -1015,7 +1037,7 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
                 }
             });
             favButton.setActivated(userData.isFavorite());
-            mDetailsOverviewRow.addAction(favButton);
+            // mDetailsOverviewRow.addAction(favButton); // Removed - favorite moved to overflow menu
         }
 
         if (mBaseItem.getType() == BaseItemKind.EPISODE && mBaseItem.getSeriesId() != null) {
@@ -1173,6 +1195,8 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
         if (shuffleButton != null) actionsList.add(shuffleButton);
         if (favButton != null) actionsList.add(favButton);
         if (goToSeriesButton != null) actionsList.add(goToSeriesButton);
+        if (collectionButton != null) actionsList.add(collectionButton);
+        if (watchlistButton != null) actionsList.add(watchlistButton);
 
         // reverse the list so the less important actions are hidden first
         Collections.reverse(actionsList);

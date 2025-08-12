@@ -3,6 +3,7 @@ package com.strmr.ai.data.mapper
 import com.strmr.ai.data.api.model.tmdb.TmdbMovie
 import com.strmr.ai.data.api.model.tmdb.TmdbMovieDetails
 import com.strmr.ai.data.api.model.tmdb.TmdbMovieReleasesResponse
+import com.strmr.ai.data.api.model.tmdb.TmdbVideoResponse
 import com.strmr.ai.data.api.model.trakt.TraktMovie
 import com.strmr.ai.data.api.model.trakt.TraktMovieResponse
 import com.strmr.ai.data.database.entity.Movie
@@ -19,13 +20,25 @@ object MovieMapper {
     }
     
     /**
+     * Extract YouTube trailer key from video response
+     */
+    private fun extractYouTubeTrailerKey(videoResponse: TmdbVideoResponse?): String? {
+        return videoResponse?.results
+            ?.filter { it.isYouTubeTrailer }
+            ?.sortedByDescending { it.official }
+            ?.firstOrNull()
+            ?.key
+    }
+    
+    /**
      * Maps a TraktMovieResponse and TmdbMovieDetails to a Room Movie entity with complete data
      */
     fun mapTraktAndTmdbToMovie(
         traktResponse: TraktMovieResponse,
         tmdbMovieDetails: TmdbMovieDetails?,
         category: String,
-        releasesResponse: TmdbMovieReleasesResponse? = null
+        releasesResponse: TmdbMovieReleasesResponse? = null,
+        videoResponse: TmdbVideoResponse? = null
     ): Movie {
         val traktMovie = traktResponse.movie
         return Movie(
@@ -49,7 +62,8 @@ object MovieMapper {
             certification = extractCertification(releasesResponse),
             rottenTomatoesRating = null, // Not available from current APIs
             collectionId = tmdbMovieDetails?.belongsToCollection?.id,
-            collectionName = tmdbMovieDetails?.belongsToCollection?.name
+            collectionName = tmdbMovieDetails?.belongsToCollection?.name,
+            youtubeTrailerKey = extractYouTubeTrailerKey(videoResponse)
         )
     }
     
@@ -60,7 +74,8 @@ object MovieMapper {
         traktMovie: TraktMovie,
         tmdbMovieDetails: TmdbMovieDetails?,
         category: String,
-        releasesResponse: TmdbMovieReleasesResponse? = null
+        releasesResponse: TmdbMovieReleasesResponse? = null,
+        videoResponse: TmdbVideoResponse? = null
     ): Movie {
         return Movie(
             id = tmdbMovieDetails?.id ?: traktMovie.ids.tmdb ?: 0,
@@ -83,7 +98,8 @@ object MovieMapper {
             certification = extractCertification(releasesResponse),
             rottenTomatoesRating = null, // Not available from current APIs
             collectionId = tmdbMovieDetails?.belongsToCollection?.id,
-            collectionName = tmdbMovieDetails?.belongsToCollection?.name
+            collectionName = tmdbMovieDetails?.belongsToCollection?.name,
+            youtubeTrailerKey = extractYouTubeTrailerKey(videoResponse)
         )
     }
     
@@ -117,7 +133,8 @@ object MovieMapper {
             certification = null, // Not available without releases call
             rottenTomatoesRating = null, // Not available from current APIs
             collectionId = null, // Not available from basic TMDB data
-            collectionName = null // Not available from basic TMDB data
+            collectionName = null, // Not available from basic TMDB data
+            youtubeTrailerKey = null // Not available without video data
         )
     }
     
@@ -150,7 +167,8 @@ object MovieMapper {
             certification = null,
             rottenTomatoesRating = null,
             collectionId = null,
-            collectionName = null
+            collectionName = null,
+            youtubeTrailerKey = null
         )
     }
     
@@ -182,7 +200,8 @@ object MovieMapper {
             certification = null,
             rottenTomatoesRating = null,
             collectionId = null,
-            collectionName = null
+            collectionName = null,
+            youtubeTrailerKey = null
         )
     }
 }

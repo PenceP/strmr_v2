@@ -31,7 +31,7 @@ class DetailRowView @JvmOverloads constructor(
 			}
 			view.post {
 				// Store last focused button when navigating away from button row
-				if (binding.fdButtonRow.focusedChild == null) {
+				if (binding.fdButtonRowTop.focusedChild == null && binding.fdButtonRowBottom.focusedChild == null) {
 					lastFocusedButton = view
 				}
 			}
@@ -47,7 +47,8 @@ class DetailRowView @JvmOverloads constructor(
 	}
 
 	init {
-		binding.fdButtonRow.setOnHierarchyChangeListener(buttonsHierarchyChangeListener)
+		binding.fdButtonRowTop.setOnHierarchyChangeListener(buttonsHierarchyChangeListener)
+		binding.fdButtonRowBottom.setOnHierarchyChangeListener(buttonsHierarchyChangeListener)
 		binding.mainImage.clipToOutline = true
 	}
 }

@@ -140,5 +140,11 @@
             android:theme="@style/Theme.Jellyfin.Preferences" />
 
         <activity android:name=".ui.playback.ExternalPlayerActivity" />
+        
+        <activity 
+            android:name=".ui.YouTubePlayerActivity"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:launchMode="singleTop" />
     </application>
 </manifest>

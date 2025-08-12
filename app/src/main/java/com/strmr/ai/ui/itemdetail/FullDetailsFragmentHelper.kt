@@ -25,9 +25,11 @@ import com.strmr.ai.util.showIfNotEmpty
 import com.strmr.ai.data.database.entity.Movie
 import com.strmr.ai.data.database.entity.Show
 import com.strmr.ai.data.repository.ImprovedMovieRepository
+import com.strmr.ai.data.repository.MovieRepository
 import com.strmr.ai.data.repository.ShowRepository
 import com.strmr.ai.data.api.service.TmdbApiService
 import com.strmr.ai.data.api.service.TraktApiService
+import com.strmr.ai.data.api.model.tmdb.TmdbVideo
 import com.strmr.ai.data.database.entity.CastMember
 import com.strmr.ai.data.database.entity.ShowCastMember
 import com.strmr.ai.util.TmdbGenreMapper
@@ -44,6 +46,8 @@ import org.jellyfin.sdk.model.api.UserItemDataDto
 import com.strmr.ai.util.apiclient.JellyfinImage
 import org.jellyfin.sdk.model.api.ImageType
 import com.strmr.ai.util.ImageHelper
+import android.content.Intent
+import com.strmr.ai.ui.YouTubePlayerActivity
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.liveTvApi
@@ -380,34 +384,115 @@ fun FullDetailsFragment.togglePlayed() {
 }
 
 fun FullDetailsFragment.playTrailers() {
-	val localTrailerCount = mBaseItem.localTrailerCount ?: 0
-
-	// External trailer
-	if (localTrailerCount < 1) try {
-		val intent = getExternalTrailerIntent(requireContext(), mBaseItem)
-		if (intent != null) startActivity(intent)
-	} catch (exception: ActivityNotFoundException) {
-		Timber.w(exception, "Unable to open external trailer")
-		Toast.makeText(
-			requireContext(),
-			getString(R.string.no_player_message),
-			Toast.LENGTH_LONG
-		).show()
-	} else lifecycleScope.launch {
-		val api by inject<ApiClient>()
-
-		try {
-			val trailers = withContext(Dispatchers.IO) {
-				api.userLibraryApi.getLocalTrailers(mBaseItem.id).content
+	lifecycleScope.launch {
+		val tmdbApiService by inject<TmdbApiService>()
+		
+		// First, try to get TMDB ID and fetch trailers
+		val tmdbId = when {
+			// Check if this is a fake movie ID from TMDB
+			mBaseItem.id.toString().endsWith("-0000-0000-0000-000000000000") -> {
+				val idString = mBaseItem.id.toString()
+				idString.substring(0, idString.indexOf("-0000-0000-0000-000000000000")).toIntOrNull()
 			}
-			play(trailers, 0, false)
-		} catch (exception: ApiClientException) {
-			Timber.e(exception, "Error retrieving trailers for playback")
+			// Check provider IDs for real Jellyfin items
+			mBaseItem.providerIds?.containsKey("Tmdb") == true -> {
+				mBaseItem.providerIds?.get("Tmdb")?.toIntOrNull()
+			}
+			else -> null
+		}
+		
+		if (tmdbId != null) {
+			try {
+				// Fetch videos from TMDB API
+				val videosResponse = withContext(Dispatchers.IO) {
+					tmdbApiService.getMovieVideos(
+						tmdbId,
+						"Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
+					)
+				}
+				
+				// Find the best trailer - prioritize official trailers
+				val trailer = videosResponse.results
+					.filter { it.isYouTubeTrailer }
+					.sortedWith(compareByDescending<TmdbVideo> { it.official }
+						.thenByDescending { it.size })
+					.firstOrNull()
+				
+				if (trailer != null) {
+					// Play YouTube trailer in our in-app player
+					val intent = Intent(requireContext(), YouTubePlayerActivity::class.java).apply {
+						putExtra(YouTubePlayerActivity.EXTRA_YOUTUBE_KEY, trailer.key)
+						putExtra(YouTubePlayerActivity.EXTRA_MOVIE_TITLE, mBaseItem.name)
+					}
+					startActivity(intent)
+					return@launch
+				}
+			} catch (e: Exception) {
+				Timber.w(e, "Failed to fetch trailers from TMDB for movie ID: $tmdbId")
+			}
+		}
+		
+		// Fallback to checking database for YouTube trailer key
+		val movieRepository by inject<MovieRepository>()
+		val movie = withContext(Dispatchers.IO) {
+			try {
+				tmdbId?.let { movieRepository.getMovieById(it) }
+			} catch (e: Exception) {
+				Timber.w(e, "Failed to get movie from database")
+				null
+			}
+		}
+		
+		val youtubeKey = movie?.youtubeTrailerKey
+		if (!youtubeKey.isNullOrEmpty()) {
+			// Play YouTube trailer in our in-app player
+			val intent = Intent(requireContext(), YouTubePlayerActivity::class.java).apply {
+				putExtra(YouTubePlayerActivity.EXTRA_YOUTUBE_KEY, youtubeKey)
+				putExtra(YouTubePlayerActivity.EXTRA_MOVIE_TITLE, mBaseItem.name)
+			}
+			startActivity(intent)
+			return@launch
+		}
+		
+		// Fallback to original trailer logic for Jellyfin items
+		val localTrailerCount = mBaseItem.localTrailerCount ?: 0
+
+		// External trailer
+		if (localTrailerCount < 1) try {
+			val intent = getExternalTrailerIntent(requireContext(), mBaseItem)
+			if (intent != null) {
+				startActivity(intent)
+			} else {
+				// No trailer available
+				Toast.makeText(
+					requireContext(),
+					getString(R.string.no_trailer_available),
+					Toast.LENGTH_LONG
+				).show()
+			}
+		} catch (exception: ActivityNotFoundException) {
+			Timber.w(exception, "Unable to open external trailer")
 			Toast.makeText(
 				requireContext(),
-				getString(R.string.msg_video_playback_error),
+				getString(R.string.no_player_message),
 				Toast.LENGTH_LONG
 			).show()
+		} else {
+			// Play local trailers
+			val api by inject<ApiClient>()
+			try {
+				val trailers = withContext(Dispatchers.IO) {
+					api.userLibraryApi.getLocalTrailers(mBaseItem.id).content
+				}
+				play(trailers, 0, false)
+			} catch (exception: ApiClientException) {
+				Timber.e(exception, "Error retrieving trailers for playback")
+				Toast.makeText(
+					requireContext(),
+					getString(R.string.msg_video_playback_error),
+					Toast.LENGTH_LONG
+				).show()
+			}
 		}
 	}
 }

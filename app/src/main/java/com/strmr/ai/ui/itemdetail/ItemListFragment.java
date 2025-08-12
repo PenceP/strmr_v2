@@ -106,7 +106,7 @@ public class ItemListFragment extends Fragment implements View.OnKeyListener {
         mTitle.setText(getString(R.string.loading));
         mGenreRow = detailsBinding.fdGenreRow;
         mPoster = detailsBinding.mainImage;
-        mButtonRow = detailsBinding.fdButtonRow;
+        mButtonRow = detailsBinding.fdButtonRowTop;
         mSummary = detailsBinding.fdSummaryText;
         mItemList = binding.songs;
         mScrollView = binding.scrollView;

@@ -42,12 +42,19 @@ class MyDetailsOverviewRowPresenter(
 				binding.fdGenreRow.isVisible = false
 			}
 
-			binding.fdButtonRow.removeAllViews()
-			for (button in row.actions) {
+			binding.fdButtonRowTop.removeAllViews()
+			binding.fdButtonRowBottom.removeAllViews()
+			
+			for ((index, button) in row.actions.withIndex()) {
 				val parent = button.parent
 				if (parent is ViewGroup) parent.removeView(button)
 
-				binding.fdButtonRow.addView(button)
+				// Place first 2 buttons in top row, rest in bottom row
+				if (index < 2) {
+					binding.fdButtonRowTop.addView(button)
+				} else {
+					binding.fdButtonRowBottom.addView(button)
+				}
 			}
 		}
 

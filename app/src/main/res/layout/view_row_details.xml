@@ -177,23 +177,44 @@
             tools:text="fdSummaryText" />
 
         <LinearLayout
-            android:id="@+id/fdButtonRow"
+            android:id="@+id/fdButtonContainer"
             android:layout_width="0dp"
-            android:layout_height="70dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:divider="@drawable/blank10x10"
-            android:orientation="horizontal"
-            android:showDividers="none"
+            android:orientation="vertical"
             app:layout_constraintEnd_toEndOf="@id/guide_main_end"
             app:layout_constraintStart_toStartOf="@id/guide_main_start"
-            app:layout_constraintTop_toBottomOf="@id/fdSummaryText" />
+            app:layout_constraintTop_toBottomOf="@id/fdSummaryText">
+
+            <!-- Top row: 2 buttons (Play, Trailer) -->
+            <LinearLayout
+                android:id="@+id/fdButtonRowTop"
+                android:layout_width="match_parent"
+                android:layout_height="70dp"
+                android:divider="@drawable/blank10x10"
+                android:orientation="horizontal"
+                android:showDividers="none"
+                android:gravity="start" />
+
+            <!-- Bottom row: 3 buttons (Watched, Collection, Watchlist) -->
+            <LinearLayout
+                android:id="@+id/fdButtonRowBottom"
+                android:layout_width="match_parent"
+                android:layout_height="70dp"
+                android:layout_marginTop="5dp"
+                android:divider="@drawable/blank10x10"
+                android:orientation="horizontal"
+                android:showDividers="none"
+                android:gravity="start" />
+
+        </LinearLayout>
 
         <!-- Right -->
 
         <FrameLayout
             android:layout_width="0dp"
             android:layout_height="0dp"
-            app:layout_constraintBottom_toBottomOf="@id/fdButtonRow"
+            app:layout_constraintBottom_toBottomOf="@id/fdButtonContainer"
             app:layout_constraintEnd_toEndOf="@id/guide_right_end"
             app:layout_constraintStart_toStartOf="@id/guide_right_start"
             app:layout_constraintTop_toTopOf="@id/guide_top"

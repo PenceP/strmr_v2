@@ -24,7 +24,7 @@ import com.strmr.ai.data.entity.TraktSession
 
 @Database(
     entities = [Movie::class, MovieListEntry::class, Show::class, ShowListEntry::class, CastMember::class, ShowCastMember::class, TraktSession::class],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -239,6 +239,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
         
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add YouTube trailer key field to movies table
+                database.execSQL("ALTER TABLE movies ADD COLUMN youtubeTrailerKey TEXT")
+            }
+        }
+        
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -246,7 +253,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "trakt_movies_database"
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                 .build()
                 INSTANCE = instance
                 instance
