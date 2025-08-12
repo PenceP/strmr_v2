@@ -79,6 +79,8 @@ class MainActivity : FragmentActivity() {
 		setContentView(binding.root)
 	}
 
+	private var hasInitialized = false
+
 	override fun onResume() {
 		super.onResume()
 
@@ -91,10 +93,13 @@ class MainActivity : FragmentActivity() {
 
 	private fun validateAuthentication(): Boolean {
 		// Skip server authentication for Trakt app - go directly to home screen
-		Timber.d("Skipping server authentication - using Trakt data sources")
-		
-		// Navigate to home screen immediately
-		navigationRepository.reset(clearHistory = true)
+		// Only navigate to home on first initialization, not when returning from other activities
+		if (!hasInitialized) {
+			Timber.d("Skipping server authentication - using Trakt data sources")
+			// Navigate to home screen immediately
+			navigationRepository.reset(clearHistory = true)
+			hasInitialized = true
+		}
 		
 		return true
 	}

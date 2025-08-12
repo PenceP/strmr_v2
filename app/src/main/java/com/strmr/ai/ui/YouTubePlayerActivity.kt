@@ -7,6 +7,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import com.strmr.ai.R
 import com.strmr.ai.databinding.ActivityYoutubePlayerBinding
 
@@ -33,6 +34,13 @@ class YouTubePlayerActivity : ComponentActivity() {
             finish()
             return
         }
+        
+        // Handle back press with the modern callback approach
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                finish()
+            }
+        })
         
         setupWebView(youtubeKey, movieTitle)
     }
@@ -105,14 +113,6 @@ class YouTubePlayerActivity : ComponentActivity() {
         // Handle back button
         binding.closeButton.setOnClickListener {
             finish()
-        }
-    }
-    
-    override fun onBackPressed() {
-        if (binding.webView.canGoBack()) {
-            binding.webView.goBack()
-        } else {
-            super.onBackPressed()
         }
     }
     

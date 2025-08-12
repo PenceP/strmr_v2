@@ -144,7 +144,6 @@
         <activity 
             android:name=".ui.YouTubePlayerActivity"
             android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:launchMode="singleTop" />
+            android:configChanges="orientation|screenSize|keyboardHidden" />
     </application>
 </manifest>
