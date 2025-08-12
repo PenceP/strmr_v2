@@ -13,7 +13,7 @@ import androidx.fragment.app.commit
 import androidx.fragment.app.replace
 import com.strmr.ai.R
 import com.strmr.ai.ui.preference.PreferencesActivity
-import com.strmr.ai.ui.preference.screen.AuthPreferencesScreen
+import com.strmr.ai.ui.preference.screen.AccountsPreferencesScreen
 import com.strmr.ai.ui.shared.toolbar.StartupToolbar
 
 class StartupToolbarFragment : Fragment() {
@@ -34,10 +34,10 @@ class StartupToolbarFragment : Fragment() {
 					},
 					openSettings = {
 						val intent = Intent(requireContext(), PreferencesActivity::class.java)
-						intent.putExtra(PreferencesActivity.EXTRA_SCREEN, AuthPreferencesScreen::class.qualifiedName)
+						intent.putExtra(PreferencesActivity.EXTRA_SCREEN, AccountsPreferencesScreen::class.qualifiedName)
 						intent.putExtra(
 							PreferencesActivity.EXTRA_SCREEN_ARGS, bundleOf(
-								AuthPreferencesScreen.ARG_SHOW_ABOUT to true
+								AccountsPreferencesScreen.ARG_SHOW_ABOUT to true
 							)
 						)
 						startActivity(intent)

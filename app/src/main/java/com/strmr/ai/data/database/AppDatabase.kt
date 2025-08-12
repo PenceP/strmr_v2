@@ -19,10 +19,12 @@ import com.strmr.ai.data.database.entity.Show
 import com.strmr.ai.data.database.entity.ShowListEntry
 import com.strmr.ai.data.database.entity.CastMember
 import com.strmr.ai.data.database.entity.ShowCastMember
+import com.strmr.ai.data.dao.TraktSessionDao
+import com.strmr.ai.data.entity.TraktSession
 
 @Database(
-    entities = [Movie::class, MovieListEntry::class, Show::class, ShowListEntry::class, CastMember::class, ShowCastMember::class],
-    version = 6,
+    entities = [Movie::class, MovieListEntry::class, Show::class, ShowListEntry::class, CastMember::class, ShowCastMember::class, TraktSession::class],
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -33,6 +35,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun showDao(): ShowDao
     abstract fun showListEntryDao(): ShowListEntryDao
     abstract fun castDao(): CastDao
+    abstract fun traktSessionDao(): TraktSessionDao
     
     companion object {
         @Volatile
@@ -217,6 +220,25 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
         
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Create trakt_session table
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS trakt_session (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        access_token TEXT NOT NULL,
+                        refresh_token TEXT NOT NULL,
+                        expires_in INTEGER NOT NULL,
+                        scope TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        username TEXT,
+                        user_id TEXT,
+                        last_sync INTEGER
+                    )
+                """)
+            }
+        }
+        
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -224,7 +246,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "trakt_movies_database"
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .build()
                 INSTANCE = instance
                 instance

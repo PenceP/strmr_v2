@@ -21,6 +21,7 @@ class KoinInitializer : Initializer<KoinApplication> {
 			networkModule,
 			databaseModule,
 			repositoryModule,
+			traktModule,
 		)
 	}
 

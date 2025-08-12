@@ -12,10 +12,10 @@ class UserPreferencesScreen : OptionsFragment() {
 
 		category {
 			link {
-				setTitle(R.string.pref_login)
-				setContent(R.string.pref_login_description)
+				setTitle(R.string.pref_accounts)
+				setContent(R.string.pref_accounts_description)
 				icon = R.drawable.ic_users
-				withFragment<AuthPreferencesScreen>()
+				withFragment<AccountsPreferencesScreen>()
 			}
 
 			link {

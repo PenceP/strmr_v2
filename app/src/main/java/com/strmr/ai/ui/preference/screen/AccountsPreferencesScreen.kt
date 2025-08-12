@@ -28,7 +28,7 @@ import org.jellyfin.preference.Preference
 import org.jellyfin.sdk.model.serializer.toUUIDOrNull
 import org.koin.android.ext.android.inject
 
-class AuthPreferencesScreen : OptionsFragment() {
+class AccountsPreferencesScreen : OptionsFragment() {
 	private val serverRepository: ServerRepository by inject()
 	private val serverUserRepository: ServerUserRepository by inject()
 	private val authenticationPreferences: AuthenticationPreferences by inject()
@@ -51,9 +51,36 @@ class AuthPreferencesScreen : OptionsFragment() {
 	}
 
 	override val screen by optionsScreen {
-		setTitle(R.string.pref_authentication_cat)
+		setTitle(R.string.pref_accounts)
 
+		// Trakt Account Section
 		category {
+			setTitle(R.string.pref_trakt)
+
+			link {
+				setTitle(R.string.pref_trakt_login)
+				setContent(R.string.pref_trakt_login_description)
+				icon = R.drawable.ic_users
+				withFragment<TraktPreferencesScreen>()
+			}
+		}
+
+		// Premiumize Account Section
+		category {
+			setTitle(R.string.pref_premiumize)
+
+			link {
+				setTitle(R.string.pref_premiumize_login)
+				setContent(R.string.pref_premiumize_login_description)
+				icon = R.drawable.ic_tv
+				withFragment<PremiumizePreferencesScreen>()
+			}
+		}
+
+		// Server Authentication Settings
+		category {
+			setTitle(R.string.pref_server_authentication)
+
 			userPicker(serverRepository, serverUserRepository) {
 				setTitle(R.string.auto_sign_in)
 

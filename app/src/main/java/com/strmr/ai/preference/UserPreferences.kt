@@ -252,6 +252,17 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
   		 * Enable PGS subtitle direct-play.
 		 */
 		var pgsDirectPlay = booleanPreference("pgs_enabled", true)
+
+		/* Trakt Integration */
+		/**
+		 * Automatically sync with Trakt when the app starts
+		 */
+		var traktSyncOnStartup = booleanPreference("trakt_sync_on_startup", false)
+
+		/**
+		 * Automatically update Trakt when marking items as watched
+		 */
+		var traktSyncOnWatched = booleanPreference("trakt_sync_on_watched", false)
 	}
 
 	init {
