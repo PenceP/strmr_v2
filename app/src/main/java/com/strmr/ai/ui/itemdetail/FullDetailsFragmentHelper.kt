@@ -220,7 +220,7 @@ fun FullDetailsFragment.createFakeShowBaseItemDto(show: Show, cast: List<ShowCas
 		overview = show.overview,
 		originalTitle = show.originalName,
 		// Add community rating (convert from 0-10 to 0-100 scale)
-		communityRating = if (show.voteAverage > 0) (show.voteAverage * 10).toFloat() else null,
+		communityRating = if (show.voteAverage > 0) (show.voteAverage).toFloat() else null,
 		// Add content rating (status field could contain rating info)
 		officialRating = show.contentRating,
 		// Add production year from first air date
@@ -387,12 +387,23 @@ fun FullDetailsFragment.playTrailers() {
 	lifecycleScope.launch {
 		val tmdbApiService by inject<TmdbApiService>()
 		
-		// First, try to get TMDB ID and fetch trailers
+		// Determine if this is a movie or TV show and get TMDB ID
+		val isTvShow = when {
+			mBaseItem.id.toString().endsWith("-1111-1111-1111-111111111111") -> true
+			mBaseItem.type == BaseItemKind.SERIES -> true
+			else -> false
+		}
+		
 		val tmdbId = when {
 			// Check if this is a fake movie ID from TMDB
 			mBaseItem.id.toString().endsWith("-0000-0000-0000-000000000000") -> {
 				val idString = mBaseItem.id.toString()
 				idString.substring(0, idString.indexOf("-0000-0000-0000-000000000000")).toIntOrNull()
+			}
+			// Check if this is a fake TV show ID from TMDB
+			mBaseItem.id.toString().endsWith("-1111-1111-1111-111111111111") -> {
+				val idString = mBaseItem.id.toString()
+				idString.substring(0, idString.indexOf("-1111-1111-1111-111111111111")).toIntOrNull()
 			}
 			// Check provider IDs for real Jellyfin items
 			mBaseItem.providerIds?.containsKey("Tmdb") == true -> {
@@ -403,12 +414,19 @@ fun FullDetailsFragment.playTrailers() {
 		
 		if (tmdbId != null) {
 			try {
-				// Fetch videos from TMDB API
+				// Fetch videos from TMDB API - use appropriate endpoint for movies vs TV shows
 				val videosResponse = withContext(Dispatchers.IO) {
-					tmdbApiService.getMovieVideos(
-						tmdbId,
-						"Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
-					)
+					if (isTvShow) {
+						tmdbApiService.getShowVideos(
+							tmdbId,
+							"Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
+						)
+					} else {
+						tmdbApiService.getMovieVideos(
+							tmdbId,
+							"Bearer ${BuildConfig.TMDB_ACCESS_TOKEN}"
+						)
+					}
 				}
 				
 				// Find the best trailer - prioritize official trailers
@@ -428,7 +446,7 @@ fun FullDetailsFragment.playTrailers() {
 					return@launch
 				}
 			} catch (e: Exception) {
-				Timber.w(e, "Failed to fetch trailers from TMDB for movie ID: $tmdbId")
+				Timber.w(e, "Failed to fetch trailers from TMDB for ${if (isTvShow) "TV show" else "movie"} ID: $tmdbId")
 			}
 		}
 		
@@ -804,7 +822,7 @@ fun FullDetailsFragment.addCollectionRow(
 								name = tmdbMovie.title,
 								overview = tmdbMovie.overview,
 								originalTitle = tmdbMovie.originalTitle,
-								communityRating = if (tmdbMovie.voteAverage > 0) (tmdbMovie.voteAverage * 10).toFloat() else null,
+								communityRating = if (tmdbMovie.voteAverage > 0) (tmdbMovie.voteAverage).toFloat() else null,
 								productionYear = tmdbMovie.releaseDate?.takeIf { it.length >= 4 }?.substring(0, 4)?.toIntOrNull(),
 								imageTags = if (!tmdbMovie.posterPath.isNullOrEmpty()) {
 									mapOf(ImageType.PRIMARY to "tmdb-poster:${tmdbMovie.posterPath}")
@@ -900,7 +918,7 @@ fun FullDetailsFragment.addTraktRelatedRow(
 									name = dbShow.name,
 									overview = dbShow.overview,
 									originalTitle = dbShow.originalName,
-									communityRating = if (dbShow.voteAverage > 0) (dbShow.voteAverage * 10).toFloat() else null,
+									communityRating = if (dbShow.voteAverage > 0) (dbShow.voteAverage).toFloat() else null,
 									productionYear = dbShow.firstAirDate?.substring(0, 4)?.toIntOrNull(),
 									imageTags = if (!dbShow.posterPath.isNullOrEmpty()) {
 										mapOf(ImageType.PRIMARY to "tmdb-poster:${dbShow.posterPath}")
@@ -939,7 +957,7 @@ fun FullDetailsFragment.addTraktRelatedRow(
 										name = tmdbShow.name,
 										overview = tmdbShow.overview,
 										originalTitle = tmdbShow.originalName,
-										communityRating = if (tmdbShow.voteAverage > 0) (tmdbShow.voteAverage * 10).toFloat() else null,
+										communityRating = if (tmdbShow.voteAverage > 0) (tmdbShow.voteAverage).toFloat() else null,
 										productionYear = tmdbShow.firstAirDate?.substring(0, 4)?.toIntOrNull(),
 										premiereDate = tmdbShow.firstAirDate?.let { 
 											try {
@@ -1004,7 +1022,7 @@ fun FullDetailsFragment.addTraktRelatedRow(
 									name = dbMovie.title,
 									overview = dbMovie.overview,
 									originalTitle = dbMovie.originalTitle,
-									communityRating = if (dbMovie.voteAverage > 0) (dbMovie.voteAverage * 10).toFloat() else null,
+									communityRating = if (dbMovie.voteAverage > 0) (dbMovie.voteAverage).toFloat() else null,
 									productionYear = dbMovie.releaseDate?.substring(0, 4)?.toIntOrNull(),
 									imageTags = if (!dbMovie.posterPath.isNullOrEmpty()) {
 										mapOf(ImageType.PRIMARY to "tmdb-poster:${dbMovie.posterPath}")
@@ -1043,7 +1061,7 @@ fun FullDetailsFragment.addTraktRelatedRow(
 										name = tmdbMovie.title,
 										overview = tmdbMovie.overview,
 										originalTitle = tmdbMovie.originalTitle,
-										communityRating = if (tmdbMovie.voteAverage > 0) (tmdbMovie.voteAverage * 10).toFloat() else null,
+										communityRating = if (tmdbMovie.voteAverage > 0) (tmdbMovie.voteAverage).toFloat() else null,
 										productionYear = tmdbMovie.releaseDate?.takeIf { it.length >= 4 }?.substring(0, 4)?.toIntOrNull(),
 										premiereDate = tmdbMovie.releaseDate?.let { 
 											try {

@@ -171,6 +171,16 @@ interface TmdbApiService {
         @Query("language") language: String = "en-US"
     ): TmdbVideoResponse
     
+    /**
+     * Get TV show videos (trailers, teasers, clips, etc.)
+     */
+    @GET("tv/{tv_id}/videos")
+    suspend fun getShowVideos(
+        @Path("tv_id") showId: Int,
+        @Header("Authorization") authorization: String,
+        @Query("language") language: String = "en-US"
+    ): TmdbVideoResponse
+    
     companion object {
         const val BASE_URL = "https://api.themoviedb.org/3/"
         const val IMAGE_BASE_URL = "https://image.tmdb.org/t/p/"

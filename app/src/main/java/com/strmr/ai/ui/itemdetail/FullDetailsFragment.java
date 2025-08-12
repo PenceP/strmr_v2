@@ -838,8 +838,8 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
             });
             mDetailsOverviewRow.addAction(playButton);
 
-            // Add trailer button to top row right after play button for movies
-            if (mBaseItem.getType() == BaseItemKind.MOVIE) {
+            // Add trailer button to top row right after play button for movies and TV shows
+            if (mBaseItem.getType() == BaseItemKind.MOVIE || mBaseItem.getType() == BaseItemKind.SERIES) {
                 trailerButton = TextUnderButton.create(requireContext(), R.drawable.ic_trailer, buttonSize, 0, getString(R.string.lbl_play_trailers), new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
